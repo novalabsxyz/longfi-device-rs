@@ -1,0 +1,3 @@
+[submodule "longfi-sys/longfi-device"]
+	path = longfi-sys/longfi-device
+	url = git@github.com:helium/longfi-device.git

@@ -1,0 +1,13 @@
+[package]
+name = "longfi-sys"
+version = "0.1.0"
+authors = ["Louis Thiery <louis@helium.com>"]
+edition = "2018"
+build = "build.rs"
+
+[build-dependencies]
+bindgen = {version="=0.49.0", default-features = false }
+
+[dependencies]
+cty =  "0.2"
+libm = "0.1.4"

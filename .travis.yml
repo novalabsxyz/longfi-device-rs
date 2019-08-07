@@ -1,0 +1,25 @@
+language: rust
+
+env:
+ global:
+   - RUST_BACKTRACE=1
+
+rust:
+  - nightly
+
+matrix:
+  fast_finish: true
+  allow_failures:
+    - rust: nightly
+
+before_script:
+  - sudo apt-get update
+  - sudo apt-get install gcc-arm-none-eabi g++-multilib libc6-dev-i386
+  - rustup target add thumbv6m-none-eabi
+  - rustup component add rustfmt
+
+script:
+  - cargo build
+  - cargo build --example stm32l0x2
+  #  - cargo fmt -- --check
+
