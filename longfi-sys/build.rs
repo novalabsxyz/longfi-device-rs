@@ -1,7 +1,5 @@
-#![feature(rustc_private)]
-extern crate cc;
-
 use bindgen;
+use cc;
 use std::env;
 use std::path::PathBuf;
 use std::process::Command;
