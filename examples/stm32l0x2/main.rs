@@ -49,6 +49,7 @@ const APP: () = {
     static mut DEBUG_UART: serial::Tx<USART2> = ();
     static mut BUFFER: [u8; 512] = [0; 512];
     static mut COUNT: u8 = 0;
+    static mut LONGFI: LongFi = ();
 
     #[init(resources = [BUFFER])]
     fn init() -> init::LateResources {
@@ -108,9 +109,11 @@ const APP: () = {
         let nss = gpioa.pa15.into_push_pull_output();
 
         // Initialise the SPI peripheral.
-        let spi = device
+        let mut spi = device
             .SPI1
             .spi((sck, miso, mosi), spi::MODE_0, 1_000_000.hz(), &mut rcc);
+
+        let mut longfi_radio = LongFi::new();
 
         // Get the delay provider.
         let mut delay = core.SYST.delay(rcc.clocks);
@@ -126,19 +129,13 @@ const APP: () = {
         let mut ant_sw_tx_boost = gpioc.pc1.into_push_pull_output();
 
         en_tcxo.set_high();
-
         reset.set_low();
-
         delay.delay_ms(1_u16);
-
         reset.set_high();
         delay.delay_ms(6_u16);
-        LongFi::enable_tcxo();
-
+        longfi_radio.enable_tcxo();
         reset.set_low();
-
         delay.delay_ms(1_u16);
-
         reset.set_high();
 
         let config = RfConfig {
@@ -149,11 +146,12 @@ const APP: () = {
             device_id: 0x9abc,
         };
 
-        LongFi::initialize(config);
-        LongFi::set_buffer(resources.BUFFER);
+
+        longfi_radio.initialize(config);
+        longfi_radio.set_buffer(resources.BUFFER);
 
         let packet: [u8; 5] = [0xDE, 0xAD, 0xBE, 0xEF, 0];
-        LongFi::send(&packet, packet.len());
+        longfi_radio.send(&packet, packet.len());
 
         // Return the initialised resources.
         init::LateResources {
@@ -162,21 +160,23 @@ const APP: () = {
             BUTTON: button,
             SX1276_DIO0: sx1276_dio0,
             DEBUG_UART: tx,
+            LONGFI: longfi_radio,
         }
     }
 
-    #[task(capacity = 4, priority = 2, resources = [DEBUG_UART, BUFFER])]
+    #[task(capacity = 4, priority = 2, resources = [DEBUG_UART, BUFFER, LONGFI])]
     fn radio_event(event: RfEvent) {
-        let client_event = LongFi::handle_event(event);
+        let mut longfi_radio = resources.LONGFI;
+        let client_event = longfi_radio.handle_event(event);
 
         match client_event {
             ClientEvent::ClientEvent_TxDone => {
                 write!(resources.DEBUG_UART, "Transmit Done!\r\n").unwrap();
-                LongFi::set_rx();
+                longfi_radio.set_rx();
             }
             ClientEvent::ClientEvent_Rx => {
                 // get receive buffer
-                let rx_packet = LongFi::get_rx();
+                let rx_packet = longfi_radio.get_rx();
                 write!(resources.DEBUG_UART, "Received packet\r\n").unwrap();
                 write!(resources.DEBUG_UART, "  Length =  {}\r\n", rx_packet.len).unwrap();
                 write!(resources.DEBUG_UART, "  Rssi   = {}\r\n", rx_packet.rssi).unwrap();
@@ -193,7 +193,7 @@ const APP: () = {
                     write!(resources.DEBUG_UART, "\r\n").unwrap();
                 }
                 // give buffer back to library
-                LongFi::set_buffer(resources.BUFFER);
+                longfi_radio.set_buffer(resources.BUFFER);
             }
             ClientEvent::ClientEvent_None => {}
             _ => {
@@ -202,7 +202,7 @@ const APP: () = {
         }
     }
 
-    #[task(capacity = 4, priority = 2, resources = [DEBUG_UART, COUNT])]
+    #[task(capacity = 4, priority = 2, resources = [DEBUG_UART, COUNT, LONGFI])]
     fn send_ping() {
         write!(resources.DEBUG_UART, "Sending Ping\r\n").unwrap();
         let packet: [u8; 72] = [
@@ -280,7 +280,7 @@ const APP: () = {
             0xa4,
         ];
         *resources.COUNT += 1;
-        LongFi::send(&packet, packet.len());
+        resources.LONGFI.send(&packet, packet.len());
     }
 
     #[interrupt(priority = 1, resources = [LED, INT, BUTTON], spawn = [send_ping])]
@@ -315,10 +315,11 @@ use stm32l0xx_hal::gpio::{Floating, Input, PushPull};
 
 use core::ffi;
 use embedded_hal::spi::FullDuplex;
-use nb::block;
-
 use stm32l0xx_hal::pac::SPI1;
 
+#[macro_use]
+extern crate nb;
+use nb::block;
 #[repr(C, align(4))]
 pub struct SpiInstance {
     Instance: *mut ffi::c_void,

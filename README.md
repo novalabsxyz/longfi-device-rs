@@ -32,4 +32,3 @@ or OpenOCD server (Note: if you are using the OpenOCD server, you will want to u
 
 run the example:
 	`cargo run --example stm32l0x2 [--release]`
-
