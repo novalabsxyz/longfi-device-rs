@@ -17,6 +17,7 @@ before_script:
   - sudo apt-get install gcc-arm-none-eabi g++-multilib libc6-dev-i386 libnewlib-arm-none-eabi
   - rustup target add thumbv6m-none-eabi
   - rustup component add rustfmt
+  - rustup component add clippy
 
 script:
   - cargo build
