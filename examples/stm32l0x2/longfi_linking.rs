@@ -12,7 +12,6 @@ use stm32l0xx_hal::pac::SPI1;
 
 #[repr(C, align(4))]
 #[allow(dead_code)]
-#[allow(non_camel_case_types)]
 #[allow(non_snake_case)]
 pub struct SpiInstance {
     Instance: *mut ffi::c_void,
@@ -20,7 +19,6 @@ pub struct SpiInstance {
 
 #[repr(C, align(4))]
 #[allow(dead_code)]
-#[allow(non_camel_case_types)]
 #[allow(non_snake_case)]
 pub struct Spi_s {
     Spi: SpiInstance,
@@ -28,11 +26,10 @@ pub struct Spi_s {
 }
 
 #[allow(non_camel_case_types)]
-#[allow(non_snake_case)]
 pub type Spi_t = Spi_s;
 
 #[no_mangle]
-pub extern "C" fn SpiInOut(s: &mut Spi_t, outData: u16) -> u16 {
+pub extern "C" fn SpiInOut(s: &mut Spi_t, out_data: u16) -> u16 {
     let spi: &mut hal::spi::Spi<
         SPI1,
         (
@@ -52,10 +49,10 @@ pub extern "C" fn SpiInOut(s: &mut Spi_t, outData: u16) -> u16 {
             >)
     };
 
-    spi.send(outData as u8).unwrap();
-    let inData = block!(spi.read()).unwrap();
+    spi.send(out_data as u8).unwrap();
+    let in_data = block!(spi.read()).unwrap();
 
-    inData as u16
+    in_data as u16
 }
 
 #[allow(non_camel_case_types)]
@@ -107,13 +104,13 @@ pub extern "C" fn GpioInit(
     _pin_type: PinTypes,
     val: u32,
 ) {
-    let mut gpio: &mut stm32l0xx_hal::gpio::gpioc::PC0<Output<PushPull>> =
+    let gpio: &mut stm32l0xx_hal::gpio::gpioc::PC0<Output<PushPull>> =
         unsafe { &mut *(obj as *mut stm32l0xx_hal::gpio::gpioc::PC0<Output<PushPull>>) };
 
     if val == 0 {
-        gpio.set_low();
+        gpio.set_low().unwrap();
     } else {
-        gpio.set_high();
+        gpio.set_high().unwrap();
     }
 }
 
@@ -130,6 +127,7 @@ pub extern "C" fn GpioWrite(obj: Gpio_t, val: u8) {
 }
 
 #[repr(C, align(4))]
+#[allow(non_snake_case)]
 pub struct TimerEvent_s {
     IsRunning: bool,
 }
@@ -139,7 +137,7 @@ type TimerEvent_t = TimerEvent_s;
 
 #[no_mangle]
 #[allow(dead_code)]
-pub extern "C" fn TimerInit(_obj: &TimerEvent_t, cb: Option<extern "C" fn()>) {}
+pub extern "C" fn TimerInit(_obj: &TimerEvent_t, _cb: Option<extern "C" fn()>) {}
 
 #[no_mangle]
 #[allow(dead_code)]
@@ -155,7 +153,7 @@ pub extern "C" fn TimerReset(_obj: &TimerEvent_t) {}
 
 #[no_mangle]
 #[allow(dead_code)]
-pub extern "C" fn TimerSetValue(_obj: &TimerEvent_t, value: u32) {}
+pub extern "C" fn TimerSetValue(_obj: &TimerEvent_t, _value: u32) {}
 
 #[no_mangle]
 #[allow(dead_code)]
@@ -174,6 +172,7 @@ pub extern "C" fn TimerGetFutureTime(_event_in_future: &TimerEvent_t) {}
 pub extern "C" fn TimerLowPowerHandler() {}
 
 #[allow(non_camel_case_types)]
+#[allow(dead_code)]
 type irq_ptr = extern "C" fn();
 
 #[no_mangle]
@@ -184,16 +183,16 @@ pub extern "C" fn SX1276GetPaSelect(_channel: u32) -> u8 {
 
 #[no_mangle]
 #[allow(dead_code)]
-pub extern "C" fn DelayMs(ms: u32) {}
+pub extern "C" fn DelayMs(_ms: u32) {}
 
 #[no_mangle]
 #[allow(dead_code)]
-pub extern "C" fn SX1276SetAntSwLowPower(status: bool) {}
+pub extern "C" fn SX1276SetAntSwLowPower(_status: bool) {}
 
 #[no_mangle]
 #[allow(dead_code)]
-pub extern "C" fn SX1276SetAntSw(rxTx: u8) {}
+pub extern "C" fn SX1276SetAntSw(_rxtx: u8) {}
 
 #[no_mangle]
 #[allow(dead_code)]
-pub extern "C" fn assert_param(expr: bool) {}
+pub extern "C" fn assert_param(_expr: bool) {}

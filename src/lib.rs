@@ -54,10 +54,9 @@ impl LongFi {
         unsafe { longfi_sys::longfi_handle_event(event) }
     }
 
-    pub fn send(&mut self, buffer: &[u8], len: usize) {
-        let send_len = ::core::cmp::min(len, buffer.len());
+    pub fn send(&mut self, buffer: &[u8]) {
         unsafe {
-            longfi_sys::longfi_send(buffer.as_ptr(), send_len);
+            longfi_sys::longfi_send(buffer.as_ptr(), buffer.len());
         }
     }
 

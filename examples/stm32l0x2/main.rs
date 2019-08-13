@@ -128,15 +128,15 @@ const APP: () = {
         let _ant_sw_tx_rfo = gpioc.pc2.into_push_pull_output();
         let _ant_sw_tx_boost = gpioc.pc1.into_push_pull_output();
 
-        en_tcxo.set_high();
-        reset.set_low();
+        en_tcxo.set_high().unwrap();
+        reset.set_low().unwrap();
         delay.delay_ms(1_u16);
-        reset.set_high();
+        reset.set_high().unwrap();
         delay.delay_ms(6_u16);
         longfi_radio.enable_tcxo();
-        reset.set_low();
+        reset.set_low().unwrap();
         delay.delay_ms(1_u16);
-        reset.set_high();
+        reset.set_high().unwrap();
 
         let config = RfConfig {
             always_on: true,
@@ -150,7 +150,7 @@ const APP: () = {
         longfi_radio.set_buffer(resources.BUFFER);
 
         let packet: [u8; 5] = [0xDE, 0xAD, 0xBE, 0xEF, 0];
-        longfi_radio.send(&packet, packet.len());
+        longfi_radio.send(&packet);
 
         // Return the initialised resources.
         init::LateResources {
@@ -276,7 +276,7 @@ const APP: () = {
             0xa4,
         ];
         *resources.COUNT += 1;
-        resources.LONGFI.send(&packet, packet.len());
+        resources.LONGFI.send(&packet);
     }
 
     #[interrupt(priority = 1, resources = [LED, INT, BUTTON], spawn = [send_ping])]
@@ -291,13 +291,13 @@ const APP: () = {
             resources.LED.set_high().unwrap();
             *STATE = true;
         }
-        spawn.send_ping();
+        spawn.send_ping().unwrap();
     }
 
     #[interrupt(priority = 1, resources = [SX1276_DIO0, INT], spawn = [radio_event])]
     fn EXTI4_15() {
         resources.INT.clear_irq(resources.SX1276_DIO0.i);
-        spawn.radio_event(RfEvent::DIO0);
+        spawn.radio_event(RfEvent::DIO0).unwrap();
     }
 
     // Interrupt handlers used to dispatch software tasks
