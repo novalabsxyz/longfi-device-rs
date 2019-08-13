@@ -14,11 +14,14 @@ matrix:
 
 before_script:
   - sudo apt-get update
-  - sudo apt-get install gcc-arm-none-eabi g++-multilib libc6-dev-i386
+  - sudo apt-get install gcc-arm-none-eabi g++-multilib libc6-dev-i386 libnewlib-arm-none-eabi
   - rustup target add thumbv6m-none-eabi
   - rustup component add rustfmt
+  - rustup component add clippy
+  - rustup component add clippy --toolchain stable-x86_64-unknown-linux-gnu
 
 script:
   - cargo build
   - cargo build --example stm32l0x2
-  #  - cargo fmt -- --check
+  - cargo clippy -- -D clippy::all
+  - cargo fmt -- --check
