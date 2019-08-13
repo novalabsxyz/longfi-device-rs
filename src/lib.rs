@@ -13,11 +13,9 @@ extern crate cortex_m;
 pub struct LongFi;
 
 impl LongFi {
-
-    pub fn new() -> LongFi{
+    pub fn new() -> LongFi {
         // OK if LongFi is only instantiated once
-        let _x: &'static mut bool =
-            singleton!(: bool = false).unwrap();
+        let _x: &'static mut bool = singleton!(: bool = false).unwrap();
 
         LongFi {}
     }

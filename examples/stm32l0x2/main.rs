@@ -28,16 +28,16 @@ mod longfi_linking;
 #define RADIO_ANT_SWITCH_TX_RFO                     PC_2
 */
 
-extern crate panic_halt;
 extern crate nb;
+extern crate panic_halt;
 
-use stm32l0xx_hal as hal;
-use longfi_device;
-use longfi_device::LongFi;
-use longfi_device::{ClientEvent, QualityOfService, RfConfig, RfEvent};
 use core::fmt::Write;
 use hal::serial::USART2;
 use hal::{exti::TriggerEdge, gpio::*, pac, prelude::*, rcc::Config, serial, spi};
+use longfi_device;
+use longfi_device::LongFi;
+use longfi_device::{ClientEvent, QualityOfService, RfConfig, RfEvent};
+use stm32l0xx_hal as hal;
 
 use embedded_hal::digital::v2::OutputPin;
 
@@ -145,7 +145,6 @@ const APP: () = {
             oui: 0x12345678,
             device_id: 0x9abc,
         };
-
 
         longfi_radio.initialize(config);
         longfi_radio.set_buffer(resources.BUFFER);
@@ -306,4 +305,3 @@ const APP: () = {
         fn USART4_USART5();
     }
 };
-

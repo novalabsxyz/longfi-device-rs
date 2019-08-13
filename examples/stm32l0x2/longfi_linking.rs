@@ -1,17 +1,14 @@
+use core::ffi;
+use embedded_hal::digital::v2::OutputPin;
+use embedded_hal::spi::FullDuplex;
+use nb::block;
+use stm32l0xx_hal as hal;
 #[allow(dead_code)]
 #[allow(non_camel_case_types)]
 #[allow(non_snake_case)]
-
-
 use stm32l0xx_hal::gpio::gpioa::*;
 use stm32l0xx_hal::gpio::{Floating, Input, Output, PushPull};
-use core::ffi;
-use embedded_hal::spi::FullDuplex;
 use stm32l0xx_hal::pac::SPI1;
-use stm32l0xx_hal as hal;
-use nb::block;
-use embedded_hal::digital::v2::OutputPin;
-
 
 #[repr(C, align(4))]
 #[allow(dead_code)]
@@ -113,7 +110,7 @@ pub extern "C" fn GpioInit(
     let mut gpio: &mut stm32l0xx_hal::gpio::gpioc::PC0<Output<PushPull>> =
         unsafe { &mut *(obj as *mut stm32l0xx_hal::gpio::gpioc::PC0<Output<PushPull>>) };
 
-    if val==0 {
+    if val == 0 {
         gpio.set_low();
     } else {
         gpio.set_high();
@@ -125,7 +122,7 @@ pub extern "C" fn GpioWrite(obj: Gpio_t, val: u8) {
     let gpio: &mut stm32l0xx_hal::gpio::gpioa::PA15<Output<PushPull>> =
         unsafe { &mut *(obj as *mut stm32l0xx_hal::gpio::gpioa::PA15<Output<PushPull>>) };
 
-    if val==0 {
+    if val == 0 {
         gpio.set_low().unwrap();
     } else {
         gpio.set_high().unwrap();
@@ -187,8 +184,7 @@ pub extern "C" fn SX1276GetPaSelect(_channel: u32) -> u8 {
 
 #[no_mangle]
 #[allow(dead_code)]
-pub extern "C" fn DelayMs(ms: u32) {
-}
+pub extern "C" fn DelayMs(ms: u32) {}
 
 #[no_mangle]
 #[allow(dead_code)]
