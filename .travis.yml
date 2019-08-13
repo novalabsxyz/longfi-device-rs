@@ -21,4 +21,5 @@ before_script:
 script:
   - cargo build
   - cargo build --example stm32l0x2
+  - cargo clippy -- -D clippy::all
   - cargo fmt -- --check

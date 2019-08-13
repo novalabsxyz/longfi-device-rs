@@ -10,6 +10,7 @@ pub use longfi_sys::RxPacket;
 #[macro_use(singleton)]
 extern crate cortex_m;
 
+#[derive(Default)]
 pub struct LongFi;
 
 impl LongFi {
