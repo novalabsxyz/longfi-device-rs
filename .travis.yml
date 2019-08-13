@@ -21,4 +21,4 @@ before_script:
 script:
   - cargo build
   - cargo build --example stm32l0x2
-  #  - cargo fmt -- --check
+  - cargo fmt -- --check
