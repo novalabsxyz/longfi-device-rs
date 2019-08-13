@@ -15,8 +15,8 @@ pub struct LongFi;
 impl LongFi {
 
     pub fn new() -> LongFi{
-        // OK if LongFi is only instantiable once
-        let x: &'static mut bool =
+        // OK if LongFi is only instantiated once
+        let _x: &'static mut bool =
             singleton!(: bool = false).unwrap();
 
         LongFi {}
