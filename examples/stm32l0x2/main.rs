@@ -1,6 +1,5 @@
 #![cfg_attr(not(test), no_std)]
 #![no_main]
-#![feature(asm)]
 
 mod longfi_linking;
 /*
@@ -80,12 +79,7 @@ const APP: () = {
         // Configure PB2 as input.
         let button = gpiob.pb2.into_pull_up_input();
         // Configure the external interrupt on the falling edge for the pin 2.
-        exti.listen(
-            &mut syscfg,
-            button.port,
-            button.i,
-            TriggerEdge::Falling,
-        );
+        exti.listen(&mut syscfg, button.port, button.i, TriggerEdge::Falling);
 
         // // Configure PB4 as input.
         let sx1276_dio0 = gpiob.pb4.into_pull_up_input();
