@@ -1,5 +1,6 @@
-#![no_std]
+#![cfg_attr(not(test), no_std)]
 #![no_main]
+#![feature(asm)]
 
 mod longfi_linking;
 /*
@@ -7,22 +8,17 @@ mod longfi_linking;
  * Board MCU pins definitions
  */
 #define RADIO_RESET                                 PC_0
-
 #define RADIO_MOSI                                  PA_7
 #define RADIO_MISO                                  PA_6
 #define RADIO_SCLK                                  PB_3
-
 #define RADIO_NSS                                   PA_15
-
 #define RADIO_DIO_0                                 PB_4
 #define RADIO_DIO_1                                 PB_1
 #define RADIO_DIO_2                                 PB_0
 #define RADIO_DIO_3                                 PC_13
 #define RADIO_DIO_4                                 PA_5
 #define RADIO_DIO_5                                 PA_4
-
 #define RADIO_TCXO_POWER                            PA_12
-
 #define RADIO_ANT_SWITCH_RX                         PA_1
 #define RADIO_ANT_SWITCH_TX_BOOST                   PC_1
 #define RADIO_ANT_SWITCH_TX_RFO                     PC_2
@@ -33,7 +29,7 @@ extern crate panic_halt;
 
 use core::fmt::Write;
 use hal::serial::USART2;
-use hal::{exti::TriggerEdge, gpio::*, pac, prelude::*, rcc::Config, serial, spi};
+use hal::{exti::TriggerEdge, gpio::*, pac, prelude::*, rcc::Config, serial, spi, syscfg};
 use longfi_device;
 use longfi_device::LongFi;
 use longfi_device::{ClientEvent, QualityOfService, RfConfig, RfEvent};
@@ -52,11 +48,11 @@ const APP: () = {
     static mut COUNT: u8 = 0;
     static mut LONGFI: LongFi = ();
 
-    #[init(resources = [BUFFER])]
+    #[init(spawn = [send_ping], resources = [BUFFER])]
     fn init() -> init::LateResources {
         // Configure the clock.
         let mut rcc = device.RCC.freeze(Config::hsi16());
-
+        let mut syscfg = syscfg::SYSCFG::new(device.SYSCFG_COMP, &mut rcc);
         // Acquire the GPIOB peripheral. This also enables the clock for GPIOB in
         // the RCC register.
         let gpioa = device.GPIOA.split(&mut rcc);
@@ -85,8 +81,7 @@ const APP: () = {
         let button = gpiob.pb2.into_pull_up_input();
         // Configure the external interrupt on the falling edge for the pin 2.
         exti.listen(
-            &mut rcc,
-            &mut device.SYSCFG_COMP,
+            &mut syscfg,
             button.port,
             button.i,
             TriggerEdge::Falling,
@@ -96,8 +91,7 @@ const APP: () = {
         let sx1276_dio0 = gpiob.pb4.into_pull_up_input();
         // Configure the external interrupt on the falling edge for the pin 2.
         exti.listen(
-            &mut rcc,
-            &mut device.SYSCFG_COMP,
+            &mut syscfg,
             sx1276_dio0.port,
             sx1276_dio0.i,
             TriggerEdge::Rising,
@@ -113,7 +107,20 @@ const APP: () = {
             .SPI1
             .spi((sck, miso, mosi), spi::MODE_0, 1_000_000.hz(), &mut rcc);
 
-        let mut longfi_radio = LongFi::new();
+        let rf_config = RfConfig {
+            oui: 1234,
+            device_id: 5678,
+        };
+
+        static mut BINDINGS: longfi_device::BoardBindings = longfi_device::BoardBindings {
+            spi_in_out: Some(longfi_linking::spi_in_out),
+            delay_ms: Some(longfi_linking::delay_ms),
+            gpio_init: Some(longfi_linking::gpio_init),
+            gpio_write: Some(longfi_linking::gpio_write),
+            gpio_set_interrupt: Some(longfi_linking::gpio_set_interrupt),
+        };
+
+        let mut longfi_radio = unsafe { LongFi::new(&mut BINDINGS, rf_config).unwrap() };
 
         // Get the delay provider.
         let mut delay = core.SYST.delay(rcc.clocks);
@@ -133,24 +140,17 @@ const APP: () = {
         delay.delay_ms(1_u16);
         reset.set_high().unwrap();
         delay.delay_ms(6_u16);
-        longfi_radio.enable_tcxo();
+        //longfi_radio.enable_tcxo();
         reset.set_low().unwrap();
         delay.delay_ms(1_u16);
         reset.set_high().unwrap();
 
-        let config = RfConfig {
-            always_on: true,
-            qos: QualityOfService::QOS_0,
-            network_poll: 200,
-            oui: 0x12345678,
-            device_id: 0x9abc,
-        };
-
-        longfi_radio.initialize(config);
+        longfi_radio.initialize();
         longfi_radio.set_buffer(resources.BUFFER);
 
         let packet: [u8; 5] = [0xDE, 0xAD, 0xBE, 0xEF, 0];
         longfi_radio.send(&packet);
+        //spawn.send_ping();
 
         // Return the initialised resources.
         init::LateResources {
