@@ -1,4 +1,3 @@
-use core::ffi;
 use embedded_hal::digital::v2::OutputPin;
 use embedded_hal::spi::FullDuplex;
 use longfi_sys::{
@@ -40,14 +39,15 @@ pub extern "C" fn spi_in_out(s: *mut Spi_t, out_data: u16) -> u16 {
 
 #[no_mangle]
 pub extern "C" fn gpio_init(
-    obj: *mut Gpio_t,
-    pin: PinNames,
-    mode: PinModes,
-    config: PinConfigs,
-    pin_type: PinTypes,
-    value: u32,
+    _obj: *mut Gpio_t,
+    _pin: PinNames,
+    _mode: PinModes,
+    _config: PinConfigs,
+    _pin_type: PinTypes,
+    _value: u32,
 ) {
 }
+
 #[no_mangle]
 pub extern "C" fn gpio_write(obj: *mut Gpio_t, value: u32) {
     let gpio: &mut stm32l0xx_hal::gpio::gpioa::PA15<Output<PushPull>> =
@@ -61,13 +61,18 @@ pub extern "C" fn gpio_write(obj: *mut Gpio_t, value: u32) {
 }
 
 #[no_mangle]
+pub extern "C" fn gpio_read(_obj: *mut Gpio_t) -> u32 {
+    0
+}
+
+#[no_mangle]
 pub extern "C" fn gpio_set_interrupt(
-    obj: *mut Gpio_t,
-    irq_mode: IrqModes,
-    irq_priority: IrqPriorities,
-    irq_handler: GpioIrqHandler,
+    _obj: *mut Gpio_t,
+    _irq_mode: IrqModes,
+    _irq_priority: IrqPriorities,
+    _irq_handler: GpioIrqHandler,
 ) {
 }
 
 #[no_mangle]
-pub extern "C" fn delay_ms(ms: u32) {}
+pub extern "C" fn delay_ms(_ms: u32) {}

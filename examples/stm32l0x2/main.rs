@@ -1,7 +1,7 @@
 #![cfg_attr(not(test), no_std)]
 #![no_main]
 
-mod longfi_linking;
+mod longfi_bindings;
 /*
 /*!
  * Board MCU pins definitions
@@ -31,7 +31,7 @@ use hal::serial::USART2;
 use hal::{exti::TriggerEdge, gpio::*, pac, prelude::*, rcc::Config, serial, spi, syscfg};
 use longfi_device;
 use longfi_device::LongFi;
-use longfi_device::{ClientEvent, QualityOfService, RfConfig, RfEvent};
+use longfi_device::{ClientEvent, RfConfig, RfEvent};
 use stm32l0xx_hal as hal;
 
 use embedded_hal::digital::v2::OutputPin;
@@ -107,11 +107,13 @@ const APP: () = {
         };
 
         static mut BINDINGS: longfi_device::BoardBindings = longfi_device::BoardBindings {
-            spi_in_out: Some(longfi_linking::spi_in_out),
-            delay_ms: Some(longfi_linking::delay_ms),
-            gpio_init: Some(longfi_linking::gpio_init),
-            gpio_write: Some(longfi_linking::gpio_write),
-            gpio_set_interrupt: Some(longfi_linking::gpio_set_interrupt),
+            spi_in_out: Some(longfi_bindings::spi_in_out),
+            delay_ms: Some(longfi_bindings::delay_ms),
+            gpio_init: Some(longfi_bindings::gpio_init),
+            gpio_write: Some(longfi_bindings::gpio_write),
+            gpio_read: Some(longfi_bindings::gpio_read),
+            gpio_set_interrupt: Some(longfi_bindings::gpio_set_interrupt),
+
         };
 
         let mut longfi_radio = unsafe { LongFi::new(&mut BINDINGS, rf_config).unwrap() };
