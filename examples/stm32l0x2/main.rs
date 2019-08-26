@@ -113,7 +113,6 @@ const APP: () = {
             gpio_write: Some(longfi_bindings::gpio_write),
             gpio_read: Some(longfi_bindings::gpio_read),
             gpio_set_interrupt: Some(longfi_bindings::gpio_set_interrupt),
-
         };
 
         let mut longfi_radio = unsafe { LongFi::new(&mut BINDINGS, rf_config).unwrap() };
