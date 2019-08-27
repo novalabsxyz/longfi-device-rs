@@ -4,9 +4,6 @@ version = "0.1.0"
 authors = ["Louis Thiery <louis@helium.com>"]
 edition = "2018"
 
-[package.metadata.docs.rs]
-features = ["stm32l0x2", "rt"]
-
 [dependencies]
 longfi-sys = {path = "./longfi-sys"}
 libm = "0.1.4"
