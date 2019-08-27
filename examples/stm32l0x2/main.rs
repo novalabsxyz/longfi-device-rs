@@ -23,15 +23,14 @@ mod longfi_bindings;
 #define RADIO_ANT_SWITCH_TX_RFO                     PC_2
 */
 
+extern crate longfi_device;
 extern crate nb;
 extern crate panic_halt;
 
 use core::fmt::Write;
 use hal::serial::USART2;
 use hal::{exti::TriggerEdge, gpio::*, pac, prelude::*, rcc::Config, serial, spi, syscfg};
-use longfi_device;
-use longfi_device::LongFi;
-use longfi_device::{ClientEvent, RfConfig, RfEvent};
+use longfi_device::{ClientEvent, LongFi, RfConfig, RfEvent};
 use stm32l0xx_hal as hal;
 
 use embedded_hal::digital::v2::OutputPin;
@@ -115,6 +114,7 @@ const APP: () = {
             gpio_set_interrupt: Some(longfi_bindings::gpio_set_interrupt),
         };
 
+        // passing the mutable static is unsafe
         let mut longfi_radio = unsafe { LongFi::new(&mut BINDINGS, rf_config).unwrap() };
 
         // Get the delay provider.
@@ -145,7 +145,6 @@ const APP: () = {
 
         let packet: [u8; 5] = [0xDE, 0xAD, 0xBE, 0xEF, 0];
         longfi_radio.send(&packet);
-        //spawn.send_ping();
 
         // Return the initialised resources.
         init::LateResources {

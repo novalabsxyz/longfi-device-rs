@@ -7,17 +7,14 @@ edition = "2018"
 [dependencies]
 longfi-sys = {path = "./longfi-sys"}
 libm = "0.1.4"
-cortex-m = {version = "0.5.8", features = ["const-fn"] }
+cortex-m = "0.5.8"
 
 [[example]]
 name = "stm32l0x2"
 
 [dev-dependencies]
-cortex-m-rt = "0.6.7"
-cortex-m-semihosting = "0.3.2"
+cortex-m = "0.5.8"
 cortex-m-rtfm = "0.4.3"
-void = { version = "1.0.2", default-features = false }
-cast = { version = "0.2.2", default-features = false }
 panic-semihosting       = "0.5.2"
 panic-halt = "0.2.0"
 embedded-hal = { version = "0.2.2", features = ["unproven"] }

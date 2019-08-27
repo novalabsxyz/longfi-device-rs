@@ -93,7 +93,7 @@ fn main() {
     cc::Build::new()
         .pic(false)
         .flag("-std=gnu99")
-        .include("longfi-device/")
+        .include("longfi-device")
         .include("longfi-device/radio")
         .file("longfi-device/longfi.c")
         .file("longfi-device/board.c")

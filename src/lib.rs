@@ -16,7 +16,7 @@ pub use longfi_sys::RxPacket;
 extern crate cortex_m;
 
 // feature sx1276
-static mut sx1276: Option<Radio_t> = None;
+static mut SX1276: Option<Radio_t> = None;
 
 pub struct LongFi {
     c_handle: LongFi_t,
@@ -35,8 +35,8 @@ impl LongFi {
         let _x: &'static mut bool = singleton!(: bool = false).unwrap();
 
         unsafe {
-            sx1276 = Some(longfi_sys::SX1276RadioNew());
-            if let Some(radio) = &mut sx1276 {
+            SX1276 = Some(longfi_sys::SX1276RadioNew());
+            if let Some(radio) = &mut SX1276 {
                 let radio_ptr: *mut Radio_t = radio;
                 Ok(LongFi {
                     c_handle: longfi_sys::longfi_new_handle(bindings, radio_ptr, config),
