@@ -1,6 +1,7 @@
 target/
 **/*.rs.bk
-Cargo.lock
+*.lock
 *.hex
 *.bin
 
+build-script-target
