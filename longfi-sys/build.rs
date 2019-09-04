@@ -1,10 +1,9 @@
-use bindgen;
-use cc;
-use std::env;
-use std::path::PathBuf;
-use std::process::Command;
-
+#[cfg(workaround_build)]
 fn main() {
+    use std::env;
+    use std::path::PathBuf;
+    use std::process::Command;
+
     // build `libloragw`
     Command::new("make")
         .args(&["-C ", "longfi-device/radio/sx1276"])
@@ -96,4 +95,9 @@ fn main() {
         .file("longfi-device/longfi.c")
         .file("longfi-device/radio/sx1276/sx1276.c")
         .compile("longfi-device");
+}
+
+#[cfg(not(workaround_build))]
+fn main() {
+    cargo_5730::run_build_script();
 }
