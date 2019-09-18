@@ -5,10 +5,11 @@ fn main() {
     use std::process::Command;
 
     // build `libloragw`
-    Command::new("make")
+    let status = Command::new("make")
         .args(&["-C ", "longfi-device/radio/sx1276"])
         .status()
-        .expect("sx1276 build failed");
+        .expect("failed to execute make");
+    assert!(status.success(), "sx1276 build failed");
 
     let radio_path =
         PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("longfi-device/radio/");
