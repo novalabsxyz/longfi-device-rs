@@ -3,21 +3,6 @@ fn main() {
     use std::env;
     use std::path::PathBuf;
 
-    let radio_path =
-        PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("longfi-device/radio/");
-
-    let conf_path =
-        PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("longfi-device/conf");
-
-    println!(
-        "cargo:rustc-link-search=native={}",
-        radio_path.to_str().unwrap()
-    );
-    println!(
-        "cargo:rustc-link-search=native={}",
-        conf_path.to_str().unwrap()
-    );
-
    // make the bindings
    let bindings = bindgen::Builder::default()
        .raw_line("use cty;")
