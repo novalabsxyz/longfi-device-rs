@@ -2,13 +2,6 @@
 fn main() {
     use std::env;
     use std::path::PathBuf;
-    use std::process::Command;
-
-    // build `libloragw`
-    Command::new("make")
-        .args(&["-C ", "longfi-device/radio/sx1276"])
-        .status()
-        .expect("sx1276 build failed");
 
     let radio_path =
         PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("longfi-device/radio/");
