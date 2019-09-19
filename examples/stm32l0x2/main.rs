@@ -33,7 +33,7 @@ extern crate panic_halt;
 
 use core::fmt::Write;
 use hal::serial::USART2;
-use hal::{exti::TriggerEdge, gpio::*, pac, prelude::*, rcc::Config, serial, spi};
+use hal::{exti::TriggerEdge, syscfg::SYSCFG, gpio::*, pac, prelude::*, rcc::Config, serial, spi};
 use longfi_device;
 use longfi_device::LongFi;
 use longfi_device::{ClientEvent, QualityOfService, RfConfig, RfEvent};
@@ -80,13 +80,13 @@ const APP: () = {
         let led = gpiob.pb5.into_push_pull_output();
 
         let exti = device.EXTI;
+        let mut syscfg = SYSCFG::new(device.SYSCFG_COMP, &mut rcc);
 
         // Configure PB2 as input.
         let button = gpiob.pb2.into_pull_up_input();
         // Configure the external interrupt on the falling edge for the pin 2.
         exti.listen(
-            &mut rcc,
-            &mut device.SYSCFG_COMP,
+            &mut syscfg,
             button.port,
             button.i,
             TriggerEdge::Falling,
@@ -96,8 +96,7 @@ const APP: () = {
         let sx1276_dio0 = gpiob.pb4.into_pull_up_input();
         // Configure the external interrupt on the falling edge for the pin 2.
         exti.listen(
-            &mut rcc,
-            &mut device.SYSCFG_COMP,
+            &mut syscfg,
             sx1276_dio0.port,
             sx1276_dio0.i,
             TriggerEdge::Rising,
