@@ -4,27 +4,6 @@ fn main() {
     use std::path::PathBuf;
     use std::process::Command;
 
-    // build `libloragw`
-    Command::new("make")
-        .args(&["-C ", "longfi-device/radio/sx1276"])
-        .status()
-        .expect("sx1276 build failed");
-
-    let radio_path =
-        PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("longfi-device/radio/");
-
-    let conf_path =
-        PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("longfi-device/conf");
-
-    println!(
-        "cargo:rustc-link-search=native={}",
-        radio_path.to_str().unwrap()
-    );
-    println!(
-        "cargo:rustc-link-search=native={}",
-        conf_path.to_str().unwrap()
-    );
-
    // make the bindings
    let bindings = bindgen::Builder::default()
        .raw_line("use cty;")
