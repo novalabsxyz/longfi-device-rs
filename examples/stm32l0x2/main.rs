@@ -164,7 +164,12 @@ const APP: () = {
 
         match client_event {
             ClientEvent::ClientEvent_TxDone => {
-                write!(resources.DEBUG_UART, "Transmit Done!\r\n").unwrap();
+                writeln!(
+                    resources.DEBUG_UART,
+                    "=>Transmit Done! {}\r",
+                    longfi_radio.get_random()
+                )
+                .unwrap();
             }
             ClientEvent::ClientEvent_Rx => {
                 // get receive buffer
