@@ -14,7 +14,7 @@ matrix:
 
 before_script:
   - sudo apt-get update
-  - sudo apt-get install gcc-arm-none-eabi g++-multilib libc6-dev-i386
+  - sudo apt-get install gcc-arm-none-eabi g++-multilib libc6-dev-i386 libmpfr6
   - wget https://launchpad.net/ubuntu/+archive/primary/+files/gcc-arm-none-eabi_7-2018-q2-6_amd64.deb -O /tmp/gcc-arm-none-eabi_7-2018-q2-6_amd64.deb
   - sudo dpkg -i /tmp/gcc-arm-none-eabi_7-2018-q2-6_amd64.deb
   - rustup target add thumbv6m-none-eabi
