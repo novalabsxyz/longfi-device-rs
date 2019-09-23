@@ -1,3 +1,6 @@
+dist: bionic
+
+
 language: rust
 
 env:
@@ -13,8 +16,9 @@ matrix:
     - rust: nightly
 
 before_script:
+  - echo "deb http://cz.archive.ubuntu.com/ubuntu disco main universe" | sudo tee -a /etc/apt/sources.list
   - sudo apt-get update
-  - sudo apt-get install gcc-arm-none-eabi g++-multilib libc6-dev-i386 libnewlib-arm-none-eabi
+  - sudo apt-get install g++-multilib libc6-dev-i386 gcc-arm-none-eabi libnewlib-arm-none-eabi
   - rustup target add thumbv6m-none-eabi
   - rustup component add rustfmt
   - rustup component add clippy
@@ -23,5 +27,6 @@ before_script:
 script:
   - cargo build
   - cargo build --example stm32l0x2
+  - cargo build --example stm32l0x2 --release
   - cargo clippy -- -D clippy::all
   - cargo fmt -- --check

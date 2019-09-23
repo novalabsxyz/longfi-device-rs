@@ -12,7 +12,7 @@ runner = "gdb-multiarch -tui -q -x jlink.gdb"
 
 rustflags = [
   # LLD (shipped with the Rust toolchain) is used as the default linker
-  "-C", "link-arg=-Tlink.x",
+  #"-C", "link-arg=-Tlink.x",
 
   # if you run into problems with LLD switch to the GNU linker by commenting out
   # this line
@@ -21,9 +21,11 @@ rustflags = [
   # if you need to link to pre-compiled C libraries provided by a C toolchain
   # use GCC as the linker by commenting out both lines above and then
   # uncommenting the three lines below
-  # "-C", "linker=arm-none-eabi-gcc",
-  # "-C", "link-arg=-Wl,-Tlink.x",
-  # "-C", "link-arg=-nostartfiles",
+  "-C", "linker=arm-none-eabi-gcc",
+  "-C", "link-arg=-Wl,-Tlink.x",
+  "-C", "link-arg=-nostartfiles",
+  # the longfi driver compiled with opt-level "s" or "z" uses the symbol `__gnu_thumb1_case_uqi` from libgcc
+  "-C", "link-arg=-lgcc",
 ]
 
 [build]
