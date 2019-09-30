@@ -23,6 +23,8 @@ fn main() {
        .whitelist_type("QualityOfService")
        .whitelist_type("RfConfig")
        .whitelist_type("RxPacket")
+       .whitelist_type("LF_Gpio_t")
+       .whitelist_type("LF_Spi_t")
        .whitelist_function("longfi_init")
        .whitelist_function("longfi_new_handle")
        .whitelist_function("longfi_handle_event")

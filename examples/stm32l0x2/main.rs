@@ -110,10 +110,9 @@ const APP: () = {
         static mut BINDINGS: longfi_device::BoardBindings = longfi_device::BoardBindings {
             spi_in_out: Some(longfi_bindings::spi_in_out),
             delay_ms: Some(longfi_bindings::delay_ms),
-            gpio_init: Some(longfi_bindings::gpio_init),
             gpio_write: Some(longfi_bindings::gpio_write),
-            gpio_set_interrupt: Some(longfi_bindings::gpio_set_interrupt),
             gpio_read: Some(longfi_bindings::gpio_read),
+            get_random_bits: Some(longfi_bindings::get_random_bits),
         };
 
         let mut longfi_radio = unsafe { LongFi::new(&mut BINDINGS, rf_config).unwrap() };
