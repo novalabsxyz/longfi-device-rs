@@ -135,7 +135,7 @@ const APP: () = {
         delay.delay_ms(1_u16);
         reset.set_high().unwrap();
         delay.delay_ms(6_u16);
-        //longfi_radio.enable_tcxo();
+        longfi_radio.enable_tcxo();
         reset.set_low().unwrap();
         delay.delay_ms(1_u16);
         reset.set_high().unwrap();
