@@ -56,5 +56,5 @@ pub extern "C" fn delay_ms(_ms: u32) {}
 
 #[no_mangle]
 pub extern "C" fn get_random_bits(_bits: u8) -> u32 {
-    0
+    0x3E
 }
