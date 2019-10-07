@@ -1,6 +1,6 @@
 use embedded_hal::digital::v2::OutputPin;
 use embedded_hal::spi::FullDuplex;
-use longfi_device::{Spi, AntPinsMode};
+use longfi_device::{AntPinsMode, Spi};
 use nb::block;
 use stm32l0xx_hal as hal;
 use stm32l0xx_hal::gpio::gpioa::*;
@@ -33,7 +33,7 @@ where
         self.tx_boost.set_low();
     }
 
-    pub fn set_tx(&mut self){
+    pub fn set_tx(&mut self) {
         self.rx.set_low();
         self.tx_rfo.set_low();
         self.tx_boost.set_high();
@@ -46,10 +46,11 @@ where
     }
 }
 
-type AntSw =
-AntennaSwitches<stm32l0xx_hal::gpio::gpioa::PA1<stm32l0xx_hal::gpio::Output<stm32l0xx_hal::gpio::PushPull>>, stm32l0xx_hal::gpio::gpioc::PC2<stm32l0xx_hal::gpio::Output<stm32l0xx_hal::gpio::PushPull>>, stm32l0xx_hal::gpio::gpioc::PC1<stm32l0xx_hal::gpio::Output<stm32l0xx_hal::gpio::PushPull>>>;
-
-
+type AntSw = AntennaSwitches<
+    stm32l0xx_hal::gpio::gpioa::PA1<stm32l0xx_hal::gpio::Output<stm32l0xx_hal::gpio::PushPull>>,
+    stm32l0xx_hal::gpio::gpioc::PC2<stm32l0xx_hal::gpio::Output<stm32l0xx_hal::gpio::PushPull>>,
+    stm32l0xx_hal::gpio::gpioc::PC1<stm32l0xx_hal::gpio::Output<stm32l0xx_hal::gpio::PushPull>>,
+>;
 
 static mut ANT_SW: Option<AntSw> = None;
 
@@ -72,7 +73,7 @@ pub extern "C" fn set_antenna_pins(mode: AntPinsMode, power: u8) {
                 AntPinsMode::AntModeSleep => {
                     ant_sw.set_sleep();
                 }
-                _=> (),
+                _ => (),
             }
         }
     }
@@ -143,7 +144,6 @@ pub extern "C" fn radio_reset(value: bool) {
         }
     }
 }
-
 
 #[no_mangle]
 pub extern "C" fn delay_ms(ms: u32) {

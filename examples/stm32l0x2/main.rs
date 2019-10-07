@@ -7,14 +7,14 @@ extern crate nb;
 extern crate panic_halt;
 
 use core::fmt::Write;
+use embedded_hal::digital::v2::OutputPin;
 use hal::serial::USART2;
 use hal::{exti::TriggerEdge, gpio::*, pac, prelude::*, rcc::Config, serial, spi, syscfg};
+use longfi_bindings::AntennaSwitches;
 use longfi_device;
 use longfi_device::LongFi;
 use longfi_device::{ClientEvent, RfConfig, RfEvent};
 use stm32l0xx_hal as hal;
-use longfi_bindings::AntennaSwitches;
-use embedded_hal::digital::v2::OutputPin;
 
 #[rtfm::app(device = stm32l0xx_hal::pac)]
 const APP: () = {
@@ -103,7 +103,6 @@ const APP: () = {
             set_antenna_pins: Some(longfi_bindings::set_antenna_pins),
             set_board_tcxo: None,
         };
-
 
         let rf_config = RfConfig {
             oui: 1234,
