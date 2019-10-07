@@ -1,6 +1,6 @@
 use embedded_hal::digital::v2::OutputPin;
 use embedded_hal::spi::FullDuplex;
-use longfi_device::{Gpio, Spi, AntPinsMode};
+use longfi_device::{Spi, AntPinsMode};
 use nb::block;
 use stm32l0xx_hal as hal;
 use stm32l0xx_hal::gpio::gpioa::*;

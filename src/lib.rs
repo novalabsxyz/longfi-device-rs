@@ -2,13 +2,12 @@
 use longfi_sys;
 
 pub use longfi_sys::BoardBindings_t as BoardBindings;
-pub use longfi_sys::ClientEvent;
+pub use longfi_sys::ClientEvent_t as ClientEvent;
 pub use longfi_sys::LongFi_t;
-pub use longfi_sys::QualityOfService;
 use longfi_sys::Radio_t;
 pub use longfi_sys::RfConfig_t as RfConfig;
-pub use longfi_sys::RfEvent;
-pub use longfi_sys::RxPacket;
+pub use longfi_sys::RfEvent_t as RfEvent;
+pub use longfi_sys::RxPacket_t as RxPacket;
 pub use longfi_sys::AntPinsMode_t as AntPinsMode;
 pub use longfi_sys::LF_Gpio_t as Gpio;
 pub use longfi_sys::LF_Spi_t as Spi;
@@ -61,7 +60,6 @@ impl LongFi {
         unsafe {
             longfi_sys::longfi_send(
                 &mut self.c_handle,
-                QualityOfService::LONGFI_QOS_0,
                 buffer.as_ptr(),
                 buffer.len(),
             );

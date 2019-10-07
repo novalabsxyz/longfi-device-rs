@@ -76,26 +76,15 @@ const APP: () = {
         let miso = gpioa.pa6;
         let mosi = gpioa.pa7;
         let nss = gpioa.pa15.into_push_pull_output();
+        longfi_bindings::set_spi_nss(nss);
 
         // Initialise the SPI peripheral.
         let mut _spi = device
             .SPI1
             .spi((sck, miso, mosi), spi::MODE_0, 1_000_000.hz(), &mut rcc);
 
-        let rf_config = RfConfig {
-            oui: 1234,
-            device_id: 5678,
-        };
-
-        let mut delay = core.SYST.delay(rcc.clocks);
-
-        let mut reset = gpioc.pc0.into_push_pull_output();
-
-        longfi_bindings::set_spi_nss(nss);
+        let reset = gpioc.pc0.into_push_pull_output();
         longfi_bindings::set_radio_reset(reset);
-
-        // Get the delay provider.
-        let mut en_tcxo = gpiob.pb14.into_push_pull_output();
 
         let mut ant_sw = AntennaSwitches::new(
             gpioa.pa1.into_push_pull_output(),
@@ -115,9 +104,13 @@ const APP: () = {
             set_board_tcxo: None,
         };
 
+
+        let rf_config = RfConfig {
+            oui: 1234,
+            device_id: 5678,
+        };
+
         let mut longfi_radio = unsafe { LongFi::new(&mut BINDINGS, rf_config).unwrap() };
-
-
 
         longfi_radio.set_buffer(resources.BUFFER);
 
