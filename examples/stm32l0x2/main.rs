@@ -2,39 +2,19 @@
 #![no_main]
 
 mod longfi_bindings;
-/*
-/*!
- * Board MCU pins definitions
- */
-#define RADIO_RESET                                 PC_0
-#define RADIO_MOSI                                  PA_7
-#define RADIO_MISO                                  PA_6
-#define RADIO_SCLK                                  PB_3
-#define RADIO_NSS                                   PA_15
-#define RADIO_DIO_0                                 PB_4
-#define RADIO_DIO_1                                 PB_1
-#define RADIO_DIO_2                                 PB_0
-#define RADIO_DIO_3                                 PC_13
-#define RADIO_DIO_4                                 PA_5
-#define RADIO_DIO_5                                 PA_4
-#define RADIO_TCXO_POWER                            PA_12
-#define RADIO_ANT_SWITCH_RX                         PA_1
-#define RADIO_ANT_SWITCH_TX_BOOST                   PC_1
-#define RADIO_ANT_SWITCH_TX_RFO                     PC_2
-*/
 
 extern crate nb;
 extern crate panic_halt;
 
 use core::fmt::Write;
-use hal::serial::USART2;
+use embedded_hal::digital::v2::OutputPin;
+use hal::serial::USART1;
 use hal::{exti::TriggerEdge, gpio::*, pac, prelude::*, rcc::Config, serial, spi, syscfg};
+use longfi_bindings::AntennaSwitches;
 use longfi_device;
 use longfi_device::LongFi;
 use longfi_device::{ClientEvent, RfConfig, RfEvent};
 use stm32l0xx_hal as hal;
-
-use embedded_hal::digital::v2::OutputPin;
 
 #[rtfm::app(device = stm32l0xx_hal::pac)]
 const APP: () = {
@@ -42,7 +22,7 @@ const APP: () = {
     static mut INT: pac::EXTI = ();
     static mut BUTTON: gpiob::PB2<Input<PullUp>> = ();
     static mut SX1276_DIO0: gpiob::PB4<Input<PullUp>> = ();
-    static mut DEBUG_UART: serial::Tx<USART2> = ();
+    static mut DEBUG_UART: serial::Tx<USART1> = ();
     static mut BUFFER: [u8; 512] = [0; 512];
     static mut COUNT: u8 = 0;
     static mut LONGFI: LongFi = ();
@@ -59,12 +39,12 @@ const APP: () = {
         let gpiob = device.GPIOB.split(&mut rcc);
         let gpioc = device.GPIOC.split(&mut rcc);
 
-        let tx_pin = gpioa.pa2;
-        let rx_pin = gpioa.pa3;
+        let tx_pin = gpioa.pa9;
+        let rx_pin = gpioa.pa10;
 
         // Configure the serial peripheral.
         let serial = device
-            .USART2
+            .USART1
             .usart((tx_pin, rx_pin), serial::Config::default(), &mut rcc)
             .unwrap();
 
@@ -95,51 +75,44 @@ const APP: () = {
         let sck = gpiob.pb3;
         let miso = gpioa.pa6;
         let mosi = gpioa.pa7;
-        let _nss = gpioa.pa15.into_push_pull_output();
+        let nss = gpioa.pa15.into_push_pull_output();
+        longfi_bindings::set_spi_nss(nss);
 
         // Initialise the SPI peripheral.
         let mut _spi = device
             .SPI1
             .spi((sck, miso, mosi), spi::MODE_0, 1_000_000.hz(), &mut rcc);
 
+        let reset = gpioc.pc0.into_push_pull_output();
+        longfi_bindings::set_radio_reset(reset);
+
+        let mut ant_sw = AntennaSwitches::new(
+            gpioa.pa1.into_push_pull_output(),
+            gpioc.pc2.into_push_pull_output(),
+            gpioc.pc1.into_push_pull_output(),
+        );
+
+        longfi_bindings::set_antenna_switch(ant_sw);
+
+        let en_tcxo = gpioa.pa8.into_push_pull_output();
+        longfi_bindings::set_tcxo_pins(en_tcxo);
+
+        static mut BINDINGS: longfi_device::BoardBindings = longfi_device::BoardBindings {
+            reset: Some(longfi_bindings::radio_reset),
+            spi_in_out: Some(longfi_bindings::spi_in_out),
+            spi_nss: Some(longfi_bindings::spi_nss),
+            delay_ms: Some(longfi_bindings::delay_ms),
+            get_random_bits: Some(longfi_bindings::get_random_bits),
+            set_antenna_pins: Some(longfi_bindings::set_antenna_pins),
+            set_board_tcxo: Some(longfi_bindings::set_tcxo),
+        };
+
         let rf_config = RfConfig {
             oui: 1234,
             device_id: 5678,
         };
 
-        static mut BINDINGS: longfi_device::BoardBindings = longfi_device::BoardBindings {
-            spi_in_out: Some(longfi_bindings::spi_in_out),
-            delay_ms: Some(longfi_bindings::delay_ms),
-            gpio_init: Some(longfi_bindings::gpio_init),
-            gpio_write: Some(longfi_bindings::gpio_write),
-            gpio_set_interrupt: Some(longfi_bindings::gpio_set_interrupt),
-            gpio_read: Some(longfi_bindings::gpio_read),
-        };
-
         let mut longfi_radio = unsafe { LongFi::new(&mut BINDINGS, rf_config).unwrap() };
-
-        // Get the delay provider.
-        let mut delay = core.SYST.delay(rcc.clocks);
-        let mut reset = gpioc.pc0.into_push_pull_output();
-
-        let mut en_tcxo = gpiob.pb14.into_push_pull_output();
-
-        //#define RADIO_ANT_SWITCH_RX                  STM32L0_GPIO_PIN_PA1
-        //#define RADIO_ANT_SWITCH_TX_RFO              STM32L0_GPIO_PIN_PC2
-        //#define RADIO_ANT_SWITCH_TX_BOOST            STM32L0_GPIO_PIN_PC1
-        let _ant_sw_rx = gpioa.pa1.into_push_pull_output();
-        let _ant_sw_tx_rfo = gpioc.pc2.into_push_pull_output();
-        let _ant_sw_tx_boost = gpioc.pc1.into_push_pull_output();
-
-        en_tcxo.set_high().unwrap();
-        reset.set_low().unwrap();
-        delay.delay_ms(1_u16);
-        reset.set_high().unwrap();
-        delay.delay_ms(6_u16);
-        longfi_radio.enable_tcxo();
-        reset.set_low().unwrap();
-        delay.delay_ms(1_u16);
-        reset.set_high().unwrap();
 
         longfi_radio.set_buffer(resources.BUFFER);
 
