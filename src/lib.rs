@@ -9,7 +9,7 @@ use longfi_sys::Radio_t;
 pub use longfi_sys::RfConfig_t as RfConfig;
 pub use longfi_sys::RfEvent;
 pub use longfi_sys::RxPacket;
-
+pub use longfi_sys::AntPinsMode_t as AntPinsMode;
 pub use longfi_sys::LF_Gpio_t as Gpio;
 pub use longfi_sys::LF_Spi_t as Spi;
 

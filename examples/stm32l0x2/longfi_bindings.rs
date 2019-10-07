@@ -1,11 +1,82 @@
 use embedded_hal::digital::v2::OutputPin;
 use embedded_hal::spi::FullDuplex;
-use longfi_device::{Gpio, Spi};
+use longfi_device::{Gpio, Spi, AntPinsMode};
 use nb::block;
 use stm32l0xx_hal as hal;
 use stm32l0xx_hal::gpio::gpioa::*;
 use stm32l0xx_hal::gpio::{Floating, Input, Output, PushPull};
 use stm32l0xx_hal::pac::SPI1;
+
+pub struct AntennaSwitches<Rx, TxRfo, TxBoost> {
+    rx: Rx,
+    tx_rfo: TxRfo,
+    tx_boost: TxBoost,
+}
+
+impl<Rx, TxRfo, TxBoost> AntennaSwitches<Rx, TxRfo, TxBoost>
+where
+    Rx: embedded_hal::digital::v2::OutputPin,
+    TxRfo: embedded_hal::digital::v2::OutputPin,
+    TxBoost: embedded_hal::digital::v2::OutputPin,
+{
+    pub fn new(rx: Rx, tx_rfo: TxRfo, tx_boost: TxBoost) -> AntennaSwitches<Rx, TxRfo, TxBoost> {
+        AntennaSwitches {
+            rx,
+            tx_rfo,
+            tx_boost,
+        }
+    }
+
+    pub fn set_sleep(&mut self) {
+        self.rx.set_low();
+        self.tx_rfo.set_low();
+        self.tx_boost.set_low();
+    }
+
+    pub fn set_tx(&mut self){
+        self.rx.set_low();
+        self.tx_rfo.set_low();
+        self.tx_boost.set_high();
+    }
+
+    pub fn set_rx(&mut self) {
+        self.rx.set_high();
+        self.tx_rfo.set_low();
+        self.tx_boost.set_low();
+    }
+}
+
+type AntSw =
+AntennaSwitches<stm32l0xx_hal::gpio::gpioa::PA1<stm32l0xx_hal::gpio::Output<stm32l0xx_hal::gpio::PushPull>>, stm32l0xx_hal::gpio::gpioc::PC2<stm32l0xx_hal::gpio::Output<stm32l0xx_hal::gpio::PushPull>>, stm32l0xx_hal::gpio::gpioc::PC1<stm32l0xx_hal::gpio::Output<stm32l0xx_hal::gpio::PushPull>>>;
+
+
+
+static mut ANT_SW: Option<AntSw> = None;
+
+pub fn set_antenna_switch(pin: AntSw) {
+    unsafe {
+        ANT_SW = Some(pin);
+    }
+}
+
+pub extern "C" fn set_antenna_pins(mode: AntPinsMode, power: u8) {
+    unsafe {
+        if let Some(ant_sw) = &mut ANT_SW {
+            match mode {
+                AntPinsMode::AntModeTx => {
+                    ant_sw.set_tx();
+                }
+                AntPinsMode::AntModeRx => {
+                    ant_sw.set_rx();
+                }
+                AntPinsMode::AntModeSleep => {
+                    ant_sw.set_sleep();
+                }
+                _=> (),
+            }
+        }
+    }
+}
 
 #[no_mangle]
 pub extern "C" fn spi_in_out(s: *mut Spi, out_data: u8) -> u8 {
@@ -34,25 +105,50 @@ pub extern "C" fn spi_in_out(s: *mut Spi, out_data: u8) -> u8 {
     in_data
 }
 
-#[no_mangle]
-pub extern "C" fn gpio_write(obj: *mut Gpio, value: bool) {
-    let gpio: &mut stm32l0xx_hal::gpio::gpioa::PA15<Output<PushPull>> =
-        unsafe { &mut *(obj as *mut stm32l0xx_hal::gpio::gpioa::PA15<Output<PushPull>>) };
+static mut SPI_NSS: Option<stm32l0xx_hal::gpio::gpioa::PA15<Output<PushPull>>> = None;
 
-    if value {
-        gpio.set_high().unwrap();
-    } else {
-        gpio.set_low().unwrap();
+pub fn set_spi_nss(pin: stm32l0xx_hal::gpio::gpioa::PA15<Output<PushPull>>) {
+    unsafe {
+        SPI_NSS = Some(pin);
     }
 }
 
-#[no_mangle]
-pub extern "C" fn gpio_read(_obj: *mut Gpio) -> bool {
-    false
+pub extern "C" fn spi_nss(value: bool) {
+    unsafe {
+        if let Some(pin) = &mut SPI_NSS {
+            if value {
+                pin.set_low().unwrap();
+            } else {
+                pin.set_high().unwrap();
+            }
+        }
+    }
+}
+static mut RESET: Option<stm32l0xx_hal::gpio::gpioc::PC0<Output<PushPull>>> = None;
+
+pub fn set_radio_reset(pin: stm32l0xx_hal::gpio::gpioc::PC0<Output<PushPull>>) {
+    unsafe {
+        RESET = Some(pin);
+    }
 }
 
+pub extern "C" fn radio_reset(value: bool) {
+    unsafe {
+        if let Some(pin) = &mut RESET {
+            if value {
+                pin.set_low().unwrap();
+            } else {
+                pin.set_high().unwrap();
+            }
+        }
+    }
+}
+
+
 #[no_mangle]
-pub extern "C" fn delay_ms(_ms: u32) {}
+pub extern "C" fn delay_ms(ms: u32) {
+    cortex_m::asm::delay(ms);
+}
 
 #[no_mangle]
 pub extern "C" fn get_random_bits(_bits: u8) -> u32 {
