@@ -91,7 +91,7 @@ pub extern "C" fn set_tcxo(value: bool) -> u8 {
     unsafe {
         if let Some(pin) = &mut EN_TCXO {
             if value {
-                pin.set_low().unwrap();
+                pin.set_high().unwrap();
             } else {
                 pin.set_high().unwrap();
             }
@@ -140,9 +140,9 @@ pub extern "C" fn spi_nss(value: bool) {
     unsafe {
         if let Some(pin) = &mut SPI_NSS {
             if value {
-                pin.set_low().unwrap();
-            } else {
                 pin.set_high().unwrap();
+            } else {
+                pin.set_low().unwrap();
             }
         }
     }
