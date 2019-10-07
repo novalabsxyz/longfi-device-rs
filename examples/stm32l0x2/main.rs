@@ -8,7 +8,7 @@ extern crate panic_halt;
 
 use core::fmt::Write;
 use embedded_hal::digital::v2::OutputPin;
-use hal::serial::USART2;
+use hal::serial::USART1;
 use hal::{exti::TriggerEdge, gpio::*, pac, prelude::*, rcc::Config, serial, spi, syscfg};
 use longfi_bindings::AntennaSwitches;
 use longfi_device;
@@ -22,7 +22,7 @@ const APP: () = {
     static mut INT: pac::EXTI = ();
     static mut BUTTON: gpiob::PB2<Input<PullUp>> = ();
     static mut SX1276_DIO0: gpiob::PB4<Input<PullUp>> = ();
-    static mut DEBUG_UART: serial::Tx<USART2> = ();
+    static mut DEBUG_UART: serial::Tx<USART1> = ();
     static mut BUFFER: [u8; 512] = [0; 512];
     static mut COUNT: u8 = 0;
     static mut LONGFI: LongFi = ();
@@ -39,12 +39,12 @@ const APP: () = {
         let gpiob = device.GPIOB.split(&mut rcc);
         let gpioc = device.GPIOC.split(&mut rcc);
 
-        let tx_pin = gpioa.pa2;
-        let rx_pin = gpioa.pa3;
+        let tx_pin = gpioa.pa9;
+        let rx_pin = gpioa.pa10;
 
         // Configure the serial peripheral.
         let serial = device
-            .USART2
+            .USART1
             .usart((tx_pin, rx_pin), serial::Config::default(), &mut rcc)
             .unwrap();
 
@@ -94,6 +94,9 @@ const APP: () = {
 
         longfi_bindings::set_antenna_switch(ant_sw);
 
+        let en_tcxo = gpioa.pa8.into_push_pull_output();
+        longfi_bindings::set_tcxo_pins(en_tcxo);
+
         static mut BINDINGS: longfi_device::BoardBindings = longfi_device::BoardBindings {
             reset: Some(longfi_bindings::radio_reset),
             spi_in_out: Some(longfi_bindings::spi_in_out),
@@ -101,7 +104,7 @@ const APP: () = {
             delay_ms: Some(longfi_bindings::delay_ms),
             get_random_bits: Some(longfi_bindings::get_random_bits),
             set_antenna_pins: Some(longfi_bindings::set_antenna_pins),
-            set_board_tcxo: None,
+            set_board_tcxo: Some(longfi_bindings::set_tcxo),
         };
 
         let rf_config = RfConfig {
