@@ -24,6 +24,8 @@ before_script:
   - rustup component add rustfmt
   - rustup component add clippy
   - rustup component add clippy --toolchain stable-x86_64-unknown-linux-gnu
+  - export CC=arm-none-eabi-gcc
+  - export CXX=arm-none-eabi-g++
 
 script:
   - cargo build --target thumbv6m-none-eabi
