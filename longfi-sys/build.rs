@@ -10,10 +10,12 @@ fn main() {
                  .define("BUILD_TESTING", "OFF")
                  .define("CMAKE_C_COMPILER_WORKS", "1")
                  .define("CMAKE_CXX_COMPILER_WORKS", "1")
+                 .pic(false)
                  .build();
 
     println!("cargo:rustc-link-search=native={}/lib", dst.display());
     println!("cargo:rustc-link-lib=static=longfi");
+    println!("cargo:rustc-link-lib=static=sx12xx");
 
    // make the bindings
    let bindings = bindgen::Builder::default()
