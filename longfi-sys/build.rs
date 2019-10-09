@@ -1,4 +1,4 @@
-//#cfg(workaround_build)]
+#[cfg(workaround_build)]
 fn main() {
     use std::env;
     use std::path::PathBuf;
@@ -8,7 +8,8 @@ fn main() {
 
     let dst = Config::new("longfi-device")
                  .define("BUILD_TESTING", "OFF")
-                 .cflag("--specs=nosys.specs")
+                 .define("CMAKE_C_COMPILER_WORKS", "1")
+                 .define("CMAKE_CXX_COMPILER_WORKS", "1")
                  .build();
 
     println!("cargo:rustc-link-search=native={}/lib", dst.display());
@@ -65,7 +66,7 @@ fn main() {
         .expect("Couldn't write bindings!");
 }
 
-//#[cfg(not(workaround_build))]
-//fn main() {
-//    cargo_5730::run_build_script();
-//}
+#[cfg(not(workaround_build))]
+fn main() {
+   cargo_5730::run_build_script();
+}
