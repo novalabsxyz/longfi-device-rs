@@ -23,11 +23,11 @@ before_script:
   - rustup target add thumbv6m-none-eabi
   - rustup component add rustfmt
   - rustup component add clippy
- # - rustup component add clippy --toolchain stable-x86_64-unknown-linux-gnu
+  - rustup component add clippy --toolchain stable-x86_64-unknown-linux-gnu
 
 script:
   - cargo build --target thumbv6m-none-eabi
   - cargo build --example stm32l0x2 --target thumbv6m-none-eabi
   - cargo build --example stm32l0x2 --release --target thumbv6m-none-eabi
- # - cargo clippy -- -D clippy::all
+  - cargo clippy -- -D clippy::all
   - cargo fmt -- --check
