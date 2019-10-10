@@ -71,14 +71,6 @@ impl LongFi {
     pub fn get_rx(&mut self) -> RxPacket {
         unsafe { longfi_sys::longfi_get_rx() }
     }
-
-    pub fn get_random(&mut self) -> u32 {
-        unsafe { longfi_sys::longfi_get_random(&mut self.c_handle) }
-    }
-
-    pub fn enable_tcxo(&mut self) {
-        unsafe { longfi_sys::longfi_enable_tcxo(&mut self.c_handle) }
-    }
 }
 
 extern crate libm;

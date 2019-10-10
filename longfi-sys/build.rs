@@ -3,6 +3,20 @@ fn main() {
     use std::env;
     use std::path::PathBuf;
     use std::process::Command;
+    use cmake;
+    use cmake::Config;
+
+    let dst = Config::new("longfi-device")
+                 .define("BUILD_TESTING", "OFF")
+                 .define("CMAKE_C_COMPILER_WORKS", "1")
+                 .define("CMAKE_CXX_COMPILER_WORKS", "1")
+                 .define("CMAKE_TOOLCHAIN_FILE", "toolchain-gcc-arm-none-eabi.cmake")
+                 .pic(false)
+                 .build();
+
+    println!("cargo:rustc-link-search=native={}/lib", dst.display());
+    println!("cargo:rustc-link-lib=static=longfi");
+    println!("cargo:rustc-link-lib=static=sx12xx");
 
    // make the bindings
    let bindings = bindgen::Builder::default()
@@ -53,22 +67,9 @@ fn main() {
     bindings
         .write_to_file(out_path.join("bindings.rs"))
         .expect("Couldn't write bindings!");
-
-    cc::Build::new()
-        .pic(false)
-        .flag("-std=gnu99")
-        .include("longfi-device/")
-        .include("longfi-device/radio")
-        .file("longfi-device/longfi.c")
-        .file("longfi-device/board.c")
-        // you can change this file to build for a different chip
-        // put this in features later
-        .file("longfi-device/radio/sx1276/sx1276-board.c")
-        .file("longfi-device/radio/sx1276/sx1276.c")
-        .compile("longfi-device");
 }
 
 #[cfg(not(workaround_build))]
 fn main() {
-    cargo_5730::run_build_script();
+   cargo_5730::run_build_script();
 }

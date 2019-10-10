@@ -5,3 +5,4 @@ target/
 *.bin
 
 build-script-target
+longfi-sys/longfi-device/build

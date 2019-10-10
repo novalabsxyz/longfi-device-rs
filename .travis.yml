@@ -18,6 +18,7 @@ matrix:
 before_script:
   - echo "deb http://cz.archive.ubuntu.com/ubuntu disco main universe" | sudo tee -a /etc/apt/sources.list
   - sudo apt-get update
+  - sudo apt-get install cmake doxygen xdot
   - sudo apt-get install g++-multilib libc6-dev-i386 gcc-arm-none-eabi libnewlib-arm-none-eabi
   - rustup target add thumbv6m-none-eabi
   - rustup component add rustfmt
@@ -25,8 +26,8 @@ before_script:
   - rustup component add clippy --toolchain stable-x86_64-unknown-linux-gnu
 
 script:
-  - cargo build
-  - cargo build --example stm32l0x2
-  - cargo build --example stm32l0x2 --release
+  - cargo build --target thumbv6m-none-eabi
+  - cargo build --example stm32l0x2 --target thumbv6m-none-eabi
+  - cargo build --example stm32l0x2 --release --target thumbv6m-none-eabi
   - cargo clippy -- -D clippy::all
   - cargo fmt -- --check
