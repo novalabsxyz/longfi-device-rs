@@ -11,7 +11,6 @@ fn main() {
                  .define("CMAKE_C_COMPILER_WORKS", "1")
                  .define("CMAKE_CXX_COMPILER_WORKS", "1")
                  .define("CMAKE_TOOLCHAIN_FILE", "toolchain-gcc-arm-none-eabi.cmake")
-                 .define("DOT_PATH", "${DOXYGEN_DOT_PATH}")
                  .pic(false)
                  .build();
 
