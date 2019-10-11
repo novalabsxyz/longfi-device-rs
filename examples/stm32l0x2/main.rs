@@ -9,12 +9,20 @@ extern crate panic_halt;
 use core::fmt::Write;
 use embedded_hal::digital::v2::OutputPin;
 use hal::serial::USART1;
-use hal::{exti::TriggerEdge, gpio::*, pac, prelude::*, rcc::Config, serial, spi, syscfg};
+use hal::{exti::TriggerEdge, gpio::*, pac, prelude::*, rcc, serial, spi, syscfg};
 use longfi_bindings::AntennaSwitches;
 use longfi_device;
 use longfi_device::LongFi;
-use longfi_device::{ClientEvent, RfConfig, RfEvent};
+use longfi_device::{ClientEvent, Config, RfEvent};
 use stm32l0xx_hal as hal;
+
+
+static mut PRESHARED_KEY: [u8; 16] = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16];
+
+pub extern "C" fn get_preshared_key() -> u8 {
+    unsafe { mut PRESHARED_KEY[0] }
+}
+
 
 #[rtfm::app(device = stm32l0xx_hal::pac)]
 const APP: () = {
@@ -30,7 +38,7 @@ const APP: () = {
     #[init(spawn = [send_ping], resources = [BUFFER])]
     fn init() -> init::LateResources {
         // Configure the clock.
-        let mut rcc = device.RCC.freeze(Config::hsi16());
+        let mut rcc = device.RCC.freeze(rcc::Config::hsi16());
         let mut syscfg = syscfg::SYSCFG::new(device.SYSCFG_COMP, &mut rcc);
 
         // Acquire the GPIOB peripheral. This also enables the clock for GPIOB in
@@ -107,12 +115,20 @@ const APP: () = {
             set_board_tcxo: Some(longfi_bindings::set_tcxo),
         };
 
-        let rf_config = RfConfig {
+        let rf_config = Config {
             oui: 1234,
             device_id: 5678,
+            auth_mode: longfi_device::AuthMode::PresharedKey128,
         };
 
-        let mut longfi_radio = unsafe { LongFi::new(&mut BINDINGS, rf_config).unwrap() };
+        let mut auth_cb = unsafe { core::mem::zeroed::<longfi_device::AuthCb>() };
+
+        unsafe {
+            *auth_cb.get_preshared_key.as_mut() = &mut Some(get_preshared_key);
+                //auth_cb.get_preshared_key = get_preshared_key;//*auth_cb.as_mut() = get_preshared_key;
+        }
+
+        let mut longfi_radio = unsafe { LongFi::new(&mut BINDINGS, rf_config, &mut auth_cb).unwrap() };
 
         longfi_radio.set_buffer(resources.BUFFER);
 

@@ -8,10 +8,11 @@ pub use longfi_sys::LF_Gpio_t as Gpio;
 pub use longfi_sys::LF_Spi_t as Spi;
 pub use longfi_sys::LongFi_t;
 use longfi_sys::Radio_t;
-pub use longfi_sys::RfConfig_t as RfConfig;
+pub use longfi_sys::LongFiConfig_t as Config;
 pub use longfi_sys::RfEvent_t as RfEvent;
 pub use longfi_sys::RxPacket_t as RxPacket;
-
+pub use longfi_sys::LongFiAuthCallbacks as AuthCb;
+pub use longfi_sys::LongFiAuthMode_t as AuthMode;
 // feature sx1276
 static mut SX1276: Option<Radio_t> = None;
 
@@ -27,14 +28,14 @@ pub enum Error {
 unsafe impl Send for LongFi {}
 
 impl LongFi {
-    pub fn new(bindings: &mut BoardBindings, config: RfConfig) -> Result<LongFi, Error> {
+    pub fn new(bindings: &mut BoardBindings, config: Config, auth_cb: &mut AuthCb) -> Result<LongFi, Error> {
         unsafe {
             SX1276 = Some(longfi_sys::SX1276RadioNew());
             if let Some(radio) = &mut SX1276 {
                 let radio_ptr: *mut Radio_t = radio;
 
                 let mut longfi_radio = LongFi {
-                    c_handle: longfi_sys::longfi_new_handle(bindings, radio_ptr, config),
+                    c_handle: longfi_sys::longfi_new_handle(bindings, radio_ptr, config, auth_cb),
                 };
 
                 longfi_sys::longfi_init(&mut longfi_radio.c_handle);
