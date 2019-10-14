@@ -19,8 +19,8 @@ use stm32l0xx_hal as hal;
 
 static mut PRESHARED_KEY: [u8; 16] = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16];
 
-pub extern "C" fn get_preshared_key() -> u8 {
-    unsafe { mut PRESHARED_KEY[0] }
+pub extern "C" fn get_preshared_key() -> *mut u8 {
+    unsafe { &mut PRESHARED_KEY[0] as *mut u8}
 }
 
 
@@ -124,8 +124,7 @@ const APP: () = {
         let mut auth_cb = unsafe { core::mem::zeroed::<longfi_device::AuthCb>() };
 
         unsafe {
-            *auth_cb.get_preshared_key.as_mut() = &mut Some(get_preshared_key);
-                //auth_cb.get_preshared_key = get_preshared_key;//*auth_cb.as_mut() = get_preshared_key;
+            *auth_cb.get_preshared_key.as_mut() = Some(get_preshared_key);
         }
 
         let mut longfi_radio = unsafe { LongFi::new(&mut BINDINGS, rf_config, &mut auth_cb).unwrap() };
