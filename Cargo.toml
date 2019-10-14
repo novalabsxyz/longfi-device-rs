@@ -28,8 +28,10 @@ nb = "0.1.2"
 
 
 [dev-dependencies.stm32l0xx-hal]
-git                     = "https://github.com/stm32-rs/stm32l0xx-hal.git"
+#path                     = "https://github.com/lthiery/stm32l0xx-hal.git"
+path                    = "../stm32l0xx-hal"
 features                = ["stm32l0x2","rt"]
+#commit                  = "fc762c96b436e298f3681d0d0a7828f343aab223"
 
 [profile.dev]
 opt-level = "s"

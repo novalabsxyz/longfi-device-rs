@@ -25,13 +25,23 @@ pub enum Error {
     NoRadioPointer,
 }
 
+static mut AUTH_CB: Option<AuthCb> = None;
+
 unsafe impl Send for LongFi {}
 
+type AuthCbFn = unsafe extern "C" fn () -> *mut u8;
+
 impl LongFi {
-    pub fn new(bindings: &mut BoardBindings, config: Config, auth_cb: &mut AuthCb) -> Result<LongFi, Error> {
+    pub fn new(bindings: &mut BoardBindings, config: Config, auth_cb_fn: Option<AuthCbFn>) -> Result<LongFi, Error> {
         unsafe {
-            SX1276 = Some(longfi_sys::SX1276RadioNew());
-            if let Some(radio) = &mut SX1276 {
+            SX1276 = Some(longfi_sys::SX126xRadioNew());
+
+            let mut auth_cb = core::mem::zeroed::<AuthCb>() ;
+            *auth_cb.get_preshared_key.as_mut() = auth_cb_fn;
+
+            AUTH_CB = Some(auth_cb);
+
+            if let (Some(radio), Some(auth_cb)) = (&mut SX1276, &mut AUTH_CB) {
                 let radio_ptr: *mut Radio_t = radio;
 
                 let mut longfi_radio = LongFi {

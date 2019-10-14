@@ -4,8 +4,9 @@ use longfi_device::{AntPinsMode, Spi};
 use nb::block;
 use stm32l0xx_hal as hal;
 use stm32l0xx_hal::gpio::gpioa::*;
+use stm32l0xx_hal::gpio::gpiob::*;
 use stm32l0xx_hal::gpio::{Floating, Input, Output, PushPull};
-use stm32l0xx_hal::pac::SPI1;
+use stm32l0xx_hal::pac::SPI2;
 
 pub struct AntennaSwitches<Rx, TxRfo, TxBoost> {
     rx: Rx,
@@ -103,20 +104,20 @@ pub extern "C" fn set_tcxo(value: bool) -> u8 {
 #[no_mangle]
 pub extern "C" fn spi_in_out(s: *mut Spi, out_data: u8) -> u8 {
     let spi: &mut hal::spi::Spi<
-        SPI1,
+        SPI2,
         (
-            PA3<Input<Floating>>,
-            PA6<Input<Floating>>,
-            PA7<Input<Floating>>,
+            PB13<Input<Floating>>,
+            PB14<Input<Floating>>,
+            PB15<Input<Floating>>,
         ),
     > = unsafe {
         &mut *((*s).Spi.Instance
             as *mut hal::spi::Spi<
-                SPI1,
+                SPI2,
                 (
-                    PA3<Input<Floating>>,
-                    PA6<Input<Floating>>,
-                    PA7<Input<Floating>>,
+                    PB13<Input<Floating>>,
+                    PB14<Input<Floating>>,
+                    PB15<Input<Floating>>,
                 ),
             >)
     };
@@ -127,9 +128,9 @@ pub extern "C" fn spi_in_out(s: *mut Spi, out_data: u8) -> u8 {
     in_data
 }
 
-static mut SPI_NSS: Option<stm32l0xx_hal::gpio::gpioa::PA15<Output<PushPull>>> = None;
+static mut SPI_NSS: Option<stm32l0xx_hal::gpio::gpiob::PB12<Output<PushPull>>> = None;
 
-pub fn set_spi_nss(pin: stm32l0xx_hal::gpio::gpioa::PA15<Output<PushPull>>) {
+pub fn set_spi_nss(pin: stm32l0xx_hal::gpio::gpiob::PB12<Output<PushPull>>) {
     unsafe {
         SPI_NSS = Some(pin);
     }
@@ -147,9 +148,9 @@ pub extern "C" fn spi_nss(value: bool) {
         }
     }
 }
-static mut RESET: Option<stm32l0xx_hal::gpio::gpioc::PC0<Output<PushPull>>> = None;
+static mut RESET: Option<stm32l0xx_hal::gpio::gpiob::PB1<Output<PushPull>>> = None;
 
-pub fn set_radio_reset(pin: stm32l0xx_hal::gpio::gpioc::PC0<Output<PushPull>>) {
+pub fn set_radio_reset(pin: stm32l0xx_hal::gpio::gpiob::PB1<Output<PushPull>>) {
     unsafe {
         RESET = Some(pin);
     }

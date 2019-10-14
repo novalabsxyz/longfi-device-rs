@@ -8,7 +8,7 @@ extern crate panic_halt;
 
 use core::fmt::Write;
 use embedded_hal::digital::v2::OutputPin;
-use hal::serial::USART1;
+use hal::serial::USART1 as DebugUsart;
 use hal::{exti::TriggerEdge, gpio::*, pac, prelude::*, rcc, serial, spi, syscfg};
 use longfi_bindings::AntennaSwitches;
 use longfi_device;
@@ -29,8 +29,9 @@ const APP: () = {
     static mut LED: gpiob::PB5<Output<PushPull>> = ();
     static mut INT: pac::EXTI = ();
     static mut BUTTON: gpiob::PB2<Input<PullUp>> = ();
-    static mut SX1276_DIO0: gpiob::PB4<Input<PullUp>> = ();
-    static mut DEBUG_UART: serial::Tx<USART1> = ();
+    static mut SX126X_DIO1: gpiob::PB0<Input<PullUp>> = ();
+    static mut DEBUG_UART: serial::Tx<DebugUsart> = ();
+    static mut UART_RX: serial::Rx<DebugUsart> = ();
     static mut BUFFER: [u8; 512] = [0; 512];
     static mut COUNT: u8 = 0;
     static mut LONGFI: LongFi = ();
@@ -51,14 +52,16 @@ const APP: () = {
         let rx_pin = gpioa.pa10;
 
         // Configure the serial peripheral.
-        let serial = device
+        let mut serial = device
             .USART1
             .usart((tx_pin, rx_pin), serial::Config::default(), &mut rcc)
             .unwrap();
 
-        let (mut tx, mut _rx) = serial.split();
+        serial.listen(serial::Event::Rxne);
 
-        write!(tx, "SX1276 test\r\n").unwrap();
+        let (mut tx, mut rx) = serial.split();
+
+        write!(tx, "SX1262 test\r\n").unwrap();
 
         // Configure PB5 as output.
         let led = gpiob.pb5.into_push_pull_output();
@@ -71,27 +74,27 @@ const APP: () = {
         exti.listen(&mut syscfg, button.port, button.i, TriggerEdge::Falling);
 
         // // Configure PB4 as input.
-        let sx1276_dio0 = gpiob.pb4.into_pull_up_input();
+        let sx126x_dio1 = gpiob.pb0.into_pull_up_input();
         // Configure the external interrupt on the falling edge for the pin 2.
         exti.listen(
             &mut syscfg,
-            sx1276_dio0.port,
-            sx1276_dio0.i,
+            sx126x_dio1.port,
+            sx126x_dio1.i,
             TriggerEdge::Rising,
         );
 
-        let sck = gpiob.pb3;
-        let miso = gpioa.pa6;
-        let mosi = gpioa.pa7;
-        let nss = gpioa.pa15.into_push_pull_output();
+        let sck = gpiob.pb13;
+        let miso = gpiob.pb14;
+        let mosi = gpiob.pb15;
+        let nss = gpiob.pb12.into_push_pull_output();
         longfi_bindings::set_spi_nss(nss);
 
         // Initialise the SPI peripheral.
         let mut _spi = device
-            .SPI1
+            .SPI2
             .spi((sck, miso, mosi), spi::MODE_0, 1_000_000.hz(), &mut rcc);
 
-        let reset = gpioc.pc0.into_push_pull_output();
+        let reset = gpiob.pb1.into_push_pull_output();
         longfi_bindings::set_radio_reset(reset);
 
         let mut ant_sw = AntennaSwitches::new(
@@ -121,26 +124,25 @@ const APP: () = {
             auth_mode: longfi_device::AuthMode::PresharedKey128,
         };
 
-        let mut auth_cb = unsafe { core::mem::zeroed::<longfi_device::AuthCb>() };
-
-        unsafe {
-            *auth_cb.get_preshared_key.as_mut() = Some(get_preshared_key);
-        }
-
-        let mut longfi_radio = unsafe { LongFi::new(&mut BINDINGS, rf_config, &mut auth_cb).unwrap() };
+        let mut longfi_radio = unsafe { LongFi::new(&mut BINDINGS, rf_config, Some(get_preshared_key)).unwrap() };
 
         longfi_radio.set_buffer(resources.BUFFER);
 
-        let packet: [u8; 5] = [0xDE, 0xAD, 0xBE, 0xEF, 0];
-        longfi_radio.send(&packet);
+        // let value = unsafe { longfi_sys::SX126xReadRegister(0x06BC) };
+
+
+        //let packet: [u8; 5] = [0xDE, 0xAD, 0xBE, 0xEF, 0];
+        //longfi_radio.send(&packet);
+        write!(tx, "Going to main loop\r\n").unwrap();
 
         // Return the initialised resources.
         init::LateResources {
             LED: led,
             INT: exti,
             BUTTON: button,
-            SX1276_DIO0: sx1276_dio0,
+            SX126X_DIO1: sx126x_dio1,
             DEBUG_UART: tx,
+            UART_RX: rx,
             LONGFI: longfi_radio,
         }
     }
@@ -148,6 +150,8 @@ const APP: () = {
     #[task(capacity = 4, priority = 2, resources = [DEBUG_UART, BUFFER, LONGFI])]
     fn radio_event(event: RfEvent) {
         let mut longfi_radio = resources.LONGFI;
+        write!(resources.DEBUG_UART, "Event!\r\n").unwrap();
+
         let client_event = longfi_radio.handle_event(event);
 
         match client_event {
@@ -275,9 +279,16 @@ const APP: () = {
         spawn.send_ping().unwrap();
     }
 
-    #[interrupt(priority = 1, resources = [SX1276_DIO0, INT], spawn = [radio_event])]
+    #[interrupt(priority=1, resources = [UART_RX], spawn = [send_ping])]// = 1, )]
+    fn USART1() {
+        let rx = resources.UART_RX;
+        rx.read().unwrap();
+        spawn.send_ping().unwrap();
+    }
+
+    #[interrupt(priority = 1, resources = [SX126X_DIO1, INT], spawn = [radio_event])]
     fn EXTI4_15() {
-        resources.INT.clear_irq(resources.SX1276_DIO0.i);
+        resources.INT.clear_irq(resources.SX126X_DIO1.i);
         spawn.radio_event(RfEvent::DIO0).unwrap();
     }
 
