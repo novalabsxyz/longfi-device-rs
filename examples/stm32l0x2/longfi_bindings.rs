@@ -9,8 +9,6 @@ use stm32l0xx_hal::gpio::gpiob::*;
 use stm32l0xx_hal::gpio::{Floating, Input, Output, PushPull};
 use stm32l0xx_hal::pac::SPI2;
 
-
-
 static mut ANT_EN: Option<stm32l0xx_hal::gpio::gpioa::PA15<Output<PushPull>>> = None;
 
 pub fn set_ant_en(pin: stm32l0xx_hal::gpio::gpioa::PA15<Output<PushPull>>) {
