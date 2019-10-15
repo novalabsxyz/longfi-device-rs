@@ -179,12 +179,79 @@ const APP: () = {
     #[task(capacity = 4, priority = 2, resources = [DEBUG_UART, COUNT, LONGFI])]
     fn send_ping() {
         write!(resources.DEBUG_UART, "Sending Ping\r\n").unwrap();
-        let packet: [u8; 5] = [
+        let packet: [u8; 72] = [
             0xDE,
             0xAD,
             0xBE,
             0xEF,
             *resources.COUNT,
+            0xDE,
+            0xAD,
+            0xBE,
+            0xEF,
+            0xDE,
+            0xAD,
+            0xBE,
+            0xEF,
+            0xDE,
+            0xAD,
+            0xBE,
+            0xEF,
+            0xDE,
+            0xAD,
+            0xBE,
+            0xEF,
+            0xa1,
+            0xa2,
+            0xa3,
+            0xa4,
+            0xDE,
+            0xAD,
+            0xBE,
+            0xEF,
+            *resources.COUNT,
+            0xDE,
+            0xAD,
+            0xBE,
+            0xEF,
+            0xDE,
+            0xAD,
+            0xBE,
+            0xEF,
+            0xDE,
+            0xAD,
+            0xBE,
+            0xEF,
+            0xDE,
+            0xAD,
+            0xBE,
+            0xEF,
+            0xa1,
+            0xa2,
+            0xa3,
+            0xa4,
+            0xDE,
+            0xAD,
+            0xBE,
+            0xEF,
+            0xDE,
+            0xAD,
+            0xBE,
+            0xEF,
+            0xDE,
+            0xAD,
+            0xBE,
+            0xEF,
+            0xa1,
+            0xa2,
+            0xa3,
+            0xa4,
+            0xBE,
+            0xEF,
+            0xa1,
+            0xa2,
+            0xa3,
+            0xa4,
         ];
         *resources.COUNT += 1;
         resources.LONGFI.send(&packet);
@@ -215,7 +282,7 @@ const APP: () = {
     #[interrupt(priority = 1, resources = [SX126X_DIO1, INT], spawn = [radio_event])]
     fn EXTI0_1() {
         resources.INT.clear_irq(resources.SX126X_DIO1.i);
-        spawn.radio_event(RfEvent::DIO1).unwrap();
+        spawn.radio_event(RfEvent::DIO0).unwrap();
     }
 
     // Interrupt handlers used to dispatch software tasks
