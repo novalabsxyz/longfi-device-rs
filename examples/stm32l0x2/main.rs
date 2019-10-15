@@ -106,7 +106,7 @@ const APP: () = {
             spi_nss: Some(longfi_bindings::spi_nss),
             delay_ms: Some(longfi_bindings::delay_ms),
             get_random_bits: Some(longfi_bindings::get_random_bits),
-            set_antenna_pins: None,
+            set_antenna_pins: Some(longfi_bindings::set_antenna_pins),
             set_board_tcxo: None,
             busy_pin_status: Some(longfi_bindings::busy_pin_status),
         };
