@@ -1,3 +1,4 @@
+use embedded_hal::digital::v2::InputPin;
 use embedded_hal::digital::v2::OutputPin;
 use embedded_hal::spi::FullDuplex;
 use longfi_device::{AntPinsMode, Spi};
@@ -99,6 +100,23 @@ pub extern "C" fn set_tcxo(value: bool) -> u8 {
         }
     }
     6
+}
+
+static mut RADIO_BUSY: Option<stm32l0xx_hal::gpio::gpioc::PC2<Input<Floating>>> = None;
+pub fn set_is_busy_pin(pin: stm32l0xx_hal::gpio::gpioc::PC2<Input<Floating>>) {
+    unsafe {
+        RADIO_BUSY = Some(pin);
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn busy_pin_status() -> bool {
+    unsafe {
+        if let Some(pin) = &mut RADIO_BUSY {
+            return pin.is_high().unwrap();
+        }
+        true
+    }
 }
 
 #[no_mangle]

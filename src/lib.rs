@@ -6,13 +6,13 @@ pub use longfi_sys::BoardBindings_t as BoardBindings;
 pub use longfi_sys::ClientEvent_t as ClientEvent;
 pub use longfi_sys::LF_Gpio_t as Gpio;
 pub use longfi_sys::LF_Spi_t as Spi;
-pub use longfi_sys::LongFi_t;
-use longfi_sys::Radio_t;
-pub use longfi_sys::LongFiConfig_t as Config;
-pub use longfi_sys::RfEvent_t as RfEvent;
-pub use longfi_sys::RxPacket_t as RxPacket;
 pub use longfi_sys::LongFiAuthCallbacks as AuthCb;
 pub use longfi_sys::LongFiAuthMode_t as AuthMode;
+pub use longfi_sys::LongFiConfig_t as Config;
+pub use longfi_sys::LongFi_t;
+use longfi_sys::Radio_t;
+pub use longfi_sys::RfEvent_t as RfEvent;
+pub use longfi_sys::RxPacket_t as RxPacket;
 // feature sx1276
 static mut SX1276: Option<Radio_t> = None;
 
@@ -29,14 +29,18 @@ static mut AUTH_CB: Option<AuthCb> = None;
 
 unsafe impl Send for LongFi {}
 
-type AuthCbFn = unsafe extern "C" fn () -> *mut u8;
+type AuthCbFn = unsafe extern "C" fn() -> *mut u8;
 
 impl LongFi {
-    pub fn new(bindings: &mut BoardBindings, config: Config, auth_cb_fn: Option<AuthCbFn>) -> Result<LongFi, Error> {
+    pub fn new(
+        bindings: &mut BoardBindings,
+        config: Config,
+        auth_cb_fn: Option<AuthCbFn>,
+    ) -> Result<LongFi, Error> {
         unsafe {
             SX1276 = Some(longfi_sys::SX126xRadioNew());
 
-            let mut auth_cb = core::mem::zeroed::<AuthCb>() ;
+            let mut auth_cb = core::mem::zeroed::<AuthCb>();
             *auth_cb.get_preshared_key.as_mut() = auth_cb_fn;
 
             AUTH_CB = Some(auth_cb);

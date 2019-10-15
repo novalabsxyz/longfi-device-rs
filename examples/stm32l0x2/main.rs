@@ -16,20 +16,18 @@ use longfi_device::LongFi;
 use longfi_device::{ClientEvent, Config, RfEvent};
 use stm32l0xx_hal as hal;
 
-
-static mut PRESHARED_KEY: [u8; 16] = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16];
+static mut PRESHARED_KEY: [u8; 16] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
 
 pub extern "C" fn get_preshared_key() -> *mut u8 {
-    unsafe { &mut PRESHARED_KEY[0] as *mut u8}
+    unsafe { &mut PRESHARED_KEY[0] as *mut u8 }
 }
-
 
 #[rtfm::app(device = stm32l0xx_hal::pac)]
 const APP: () = {
     static mut LED: gpiob::PB5<Output<PushPull>> = ();
     static mut INT: pac::EXTI = ();
     static mut BUTTON: gpiob::PB2<Input<PullUp>> = ();
-    static mut SX126X_DIO1: gpiob::PB0<Input<PullUp>> = ();
+    static mut SX126X_DIO1: gpiob::PB0<Input<Floating>> = ();
     static mut DEBUG_UART: serial::Tx<DebugUsart> = ();
     static mut UART_RX: serial::Rx<DebugUsart> = ();
     static mut BUFFER: [u8; 512] = [0; 512];
@@ -74,7 +72,7 @@ const APP: () = {
         exti.listen(&mut syscfg, button.port, button.i, TriggerEdge::Falling);
 
         // // Configure PB4 as input.
-        let sx126x_dio1 = gpiob.pb0.into_pull_up_input();
+        let sx126x_dio1 = gpiob.pb0.into_floating_input();
         // Configure the external interrupt on the falling edge for the pin 2.
         exti.listen(
             &mut syscfg,
@@ -97,16 +95,8 @@ const APP: () = {
         let reset = gpiob.pb1.into_push_pull_output();
         longfi_bindings::set_radio_reset(reset);
 
-        let mut ant_sw = AntennaSwitches::new(
-            gpioa.pa1.into_push_pull_output(),
-            gpioc.pc2.into_push_pull_output(),
-            gpioc.pc1.into_push_pull_output(),
-        );
-
-        longfi_bindings::set_antenna_switch(ant_sw);
-
-        let en_tcxo = gpioa.pa8.into_push_pull_output();
-        longfi_bindings::set_tcxo_pins(en_tcxo);
+        let busy = gpioc.pc2.into_floating_input();
+        longfi_bindings::set_is_busy_pin(busy);
 
         static mut BINDINGS: longfi_device::BoardBindings = longfi_device::BoardBindings {
             reset: Some(longfi_bindings::radio_reset),
@@ -114,8 +104,9 @@ const APP: () = {
             spi_nss: Some(longfi_bindings::spi_nss),
             delay_ms: Some(longfi_bindings::delay_ms),
             get_random_bits: Some(longfi_bindings::get_random_bits),
-            set_antenna_pins: Some(longfi_bindings::set_antenna_pins),
-            set_board_tcxo: Some(longfi_bindings::set_tcxo),
+            set_antenna_pins: None,
+            set_board_tcxo: None,
+            busy_pin_status: Some(longfi_bindings::busy_pin_status),
         };
 
         let rf_config = Config {
@@ -124,12 +115,12 @@ const APP: () = {
             auth_mode: longfi_device::AuthMode::PresharedKey128,
         };
 
-        let mut longfi_radio = unsafe { LongFi::new(&mut BINDINGS, rf_config, Some(get_preshared_key)).unwrap() };
+        let mut longfi_radio =
+            unsafe { LongFi::new(&mut BINDINGS, rf_config, Some(get_preshared_key)).unwrap() };
 
         longfi_radio.set_buffer(resources.BUFFER);
 
         // let value = unsafe { longfi_sys::SX126xReadRegister(0x06BC) };
-
 
         //let packet: [u8; 5] = [0xDE, 0xAD, 0xBE, 0xEF, 0];
         //longfi_radio.send(&packet);
@@ -279,7 +270,7 @@ const APP: () = {
         spawn.send_ping().unwrap();
     }
 
-    #[interrupt(priority=1, resources = [UART_RX], spawn = [send_ping])]// = 1, )]
+    #[interrupt(priority=1, resources = [UART_RX], spawn = [send_ping])] // = 1, )]
     fn USART1() {
         let rx = resources.UART_RX;
         rx.read().unwrap();
