@@ -27,7 +27,7 @@ pub extern "C" fn set_antenna_pins(mode: AntPinsMode, power: u8) {
                     ant_en.set_high();
                 }
                 AntPinsMode::AntModeSleep => {
-                    ant_sw.set_low();
+                    ant_en.set_low();
                 }
                 _ => (),
             }
