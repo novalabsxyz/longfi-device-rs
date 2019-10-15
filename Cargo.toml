@@ -26,12 +26,10 @@ panic-halt = "0.2.0"
 embedded-hal = { version = "0.2.2", features = ["unproven"] }
 nb = "0.1.2"
 
-
 [dev-dependencies.stm32l0xx-hal]
-#git                    = "https://github.com/lthiery/stm32l0xx-hal.git"
-path                    = "../stm32l0xx-hal"
+git                    = "https://github.com/lthiery/stm32l0xx-hal.git"
 features                = ["stm32l0x2","rt"]
-#branch                  = "enable-spi2"
+branch                  = "enable-spi2"
 
 [profile.dev]
 opt-level = "s"
