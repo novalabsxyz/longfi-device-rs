@@ -280,7 +280,7 @@ const APP: () = {
     }
 
     #[interrupt(priority = 1, resources = [SX126X_DIO1, INT], spawn = [radio_event])]
-    fn EXTI4_15() {
+    fn EXTI0_1() {
         resources.INT.clear_irq(resources.SX126X_DIO1.i);
         spawn.radio_event(RfEvent::DIO0).unwrap();
     }
