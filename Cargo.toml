@@ -28,9 +28,10 @@ nb = "0.1.2"
 
 
 [dev-dependencies.stm32l0xx-hal]
-git                    = "https://github.com/lthiery/stm32l0xx-hal.git"
+#git                    = "https://github.com/lthiery/stm32l0xx-hal.git"
+path                    = "../stm32l0xx-hal"
 features                = ["stm32l0x2","rt"]
-branch                  = "enable-spi2"
+#branch                  = "enable-spi2"
 
 [profile.dev]
 opt-level = "s"

@@ -109,7 +109,7 @@ const APP: () = {
             set_antenna_pins: Some(longfi_bindings::set_antenna_pins),
             set_board_tcxo: None,
             busy_pin_status: Some(longfi_bindings::busy_pin_status),
-            reduce_power: None
+            reduce_power: None,
         };
 
         let rf_config = Config {
