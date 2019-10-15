@@ -10,7 +10,6 @@ use core::fmt::Write;
 use embedded_hal::digital::v2::OutputPin;
 use hal::serial::USART1 as DebugUsart;
 use hal::{exti::TriggerEdge, gpio::*, pac, prelude::*, rcc, serial, spi, syscfg};
-use longfi_bindings::AntennaSwitches;
 use longfi_device;
 use longfi_device::LongFi;
 use longfi_device::{ClientEvent, Config, RfEvent};
@@ -99,7 +98,7 @@ const APP: () = {
         longfi_bindings::set_is_busy_pin(busy);
 
         let ant_en = gpioa.pa15.into_push_pull_output();
-        longfi_bindigns::set_ant_en(ant_en);
+        longfi_bindings::set_ant_en(ant_en);
 
         static mut BINDINGS: longfi_device::BoardBindings = longfi_device::BoardBindings {
             reset: Some(longfi_bindings::radio_reset),
