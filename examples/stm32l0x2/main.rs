@@ -122,10 +122,6 @@ const APP: () = {
 
         longfi_radio.set_buffer(resources.BUFFER);
 
-        // let value = unsafe { longfi_sys::SX126xReadRegister(0x06BC) };
-
-        //let packet: [u8; 5] = [0xDE, 0xAD, 0xBE, 0xEF, 0];
-        //longfi_radio.send(&packet);
         write!(tx, "Going to main loop\r\n").unwrap();
 
         // Return the initialised resources.
@@ -143,8 +139,6 @@ const APP: () = {
     #[task(capacity = 4, priority = 2, resources = [DEBUG_UART, BUFFER, LONGFI])]
     fn radio_event(event: RfEvent) {
         let mut longfi_radio = resources.LONGFI;
-        write!(resources.DEBUG_UART, "Event!\r\n").unwrap();
-
         let client_event = longfi_radio.handle_event(event);
 
         match client_event {
