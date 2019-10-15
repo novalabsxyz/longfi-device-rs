@@ -9,71 +9,25 @@ use stm32l0xx_hal::gpio::gpiob::*;
 use stm32l0xx_hal::gpio::{Floating, Input, Output, PushPull};
 use stm32l0xx_hal::pac::SPI2;
 
-pub struct AntennaSwitches<Rx, TxRfo, TxBoost> {
-    rx: Rx,
-    tx_rfo: TxRfo,
-    tx_boost: TxBoost,
-}
 
-impl<Rx, TxRfo, TxBoost> AntennaSwitches<Rx, TxRfo, TxBoost>
-where
-    Rx: embedded_hal::digital::v2::OutputPin,
-    TxRfo: embedded_hal::digital::v2::OutputPin,
-    TxBoost: embedded_hal::digital::v2::OutputPin,
-{
-    pub fn new(rx: Rx, tx_rfo: TxRfo, tx_boost: TxBoost) -> AntennaSwitches<Rx, TxRfo, TxBoost> {
-        AntennaSwitches {
-            rx,
-            tx_rfo,
-            tx_boost,
-        }
-    }
 
-    pub fn set_sleep(&mut self) {
-        self.rx.set_low();
-        self.tx_rfo.set_low();
-        self.tx_boost.set_low();
-    }
+static mut ANT_EN: Option<stm32l0xx_hal::gpio::gpioa::PA15<Output<PushPull>>> = None;
 
-    pub fn set_tx(&mut self) {
-        self.rx.set_low();
-        self.tx_rfo.set_low();
-        self.tx_boost.set_high();
-    }
-
-    pub fn set_rx(&mut self) {
-        self.rx.set_high();
-        self.tx_rfo.set_low();
-        self.tx_boost.set_low();
-    }
-}
-
-type AntSw = AntennaSwitches<
-    stm32l0xx_hal::gpio::gpioa::PA1<stm32l0xx_hal::gpio::Output<stm32l0xx_hal::gpio::PushPull>>,
-    stm32l0xx_hal::gpio::gpioc::PC2<stm32l0xx_hal::gpio::Output<stm32l0xx_hal::gpio::PushPull>>,
-    stm32l0xx_hal::gpio::gpioc::PC1<stm32l0xx_hal::gpio::Output<stm32l0xx_hal::gpio::PushPull>>,
->;
-
-static mut ANT_SW: Option<AntSw> = None;
-
-pub fn set_antenna_switch(pin: AntSw) {
+pub fn set_ant_en(pin: stm32l0xx_hal::gpio::gpioa::PA15<Output<PushPull>>) {
     unsafe {
-        ANT_SW = Some(pin);
+        ANT_EN = Some(pin);
     }
 }
 
 pub extern "C" fn set_antenna_pins(mode: AntPinsMode, power: u8) {
     unsafe {
-        if let Some(ant_sw) = &mut ANT_SW {
+        if let Some(ant_en) = &mut ANT_EN {
             match mode {
-                AntPinsMode::AntModeTx => {
-                    ant_sw.set_tx();
-                }
-                AntPinsMode::AntModeRx => {
-                    ant_sw.set_rx();
+                AntPinsMode::AntModeTx | AntPinsMode::AntModeRx => {
+                    ant_en.set_high();
                 }
                 AntPinsMode::AntModeSleep => {
-                    ant_sw.set_sleep();
+                    ant_sw.set_low();
                 }
                 _ => (),
             }

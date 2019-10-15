@@ -98,6 +98,9 @@ const APP: () = {
         let busy = gpioc.pc2.into_floating_input();
         longfi_bindings::set_is_busy_pin(busy);
 
+        let ant_en = gpioa.pa15.into_push_pull_output();
+        longfi_bindigns::set_ant_en(ant_en);
+
         static mut BINDINGS: longfi_device::BoardBindings = longfi_device::BoardBindings {
             reset: Some(longfi_bindings::radio_reset),
             spi_in_out: Some(longfi_bindings::spi_in_out),
