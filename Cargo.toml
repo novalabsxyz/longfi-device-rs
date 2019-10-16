@@ -4,8 +4,9 @@ version = "0.1.0"
 authors = ["Louis Thiery <louis@helium.com>"]
 edition = "2018"
 
-[package.metadata.docs.rs]
-features = ["stm32l0x2", "rt"]
+[features]
+helium_feather = []
+b_l072z_lrwan1 = []
 
 [dependencies]
 longfi-sys = {path = "./longfi-sys"}
@@ -26,6 +27,7 @@ panic-halt = "0.2.0"
 embedded-hal = { version = "0.2.3", features = ["unproven"] }
 nb = "0.1.2"
 helium-tracker-feather = {path = "../tracker-feather"}
+b-l072z-lrwan1 = {path = "../b-l072z-lrwan1-rs"}
 
 [dev-dependencies.stm32l0xx-hal]
 git                    = "https://github.com/lthiery/stm32l0xx-hal.git"

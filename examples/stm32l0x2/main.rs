@@ -1,5 +1,9 @@
 #![cfg_attr(not(test), no_std)]
 #![no_main]
+
+#[cfg(not(any(feature = "helium_feather", feature = "b_l072z_lrwan1")))]
+panic!{"Must do \"--features\" for one of the support boards while building the example"}
+
 extern crate nb;
 extern crate panic_halt;
 
@@ -9,12 +13,14 @@ use hal::serial::USART1 as DebugUsart;
 use hal::{exti::TriggerEdge, gpio::*, pac, prelude::*, rcc, serial, syscfg};
 
 use longfi_device;
-use longfi_device::LongFi;
-use longfi_device::{ClientEvent, Config, RfEvent};
+use longfi_device::{LongFi, RadioType, ClientEvent, Config, RfEvent};
 
 use core::fmt::Write;
 
+#[cfg(feature = "helium_feather")]
 use helium_tracker_feather as board;
+#[cfg(feature = "b_l072z_lrwan1")]
+use b_l072z_lrwan1 as board;
 
 static mut PRESHARED_KEY: [u8; 16] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
 
@@ -82,6 +88,8 @@ const APP: () = {
         );
 
         static mut BINDINGS: board::LongFiBindings = board::LongFiBindings::new();
+
+        #[cfg(feature = "helium_feather")]
         unsafe {
             BINDINGS.init(
                 device.SPI2,
@@ -96,14 +104,31 @@ const APP: () = {
             );
         }
 
+        // #[cfg(feature = "b_l072z_lrwan1")]
+        // unsafe {
+        //     BINDINGS.init(
+        //         device.SPI1,
+        //         &mut rcc,
+        //         gpiob.pb3,
+        //         gpioa.pa6,
+        //         gpioa.pa7,
+        //         gpioa.pa15,
+        //         gpioc.pc0,
+        //         gpioa.pa1,
+        //         gpioc.pc2,
+        //         gpioc.pc1
+        //     );
+        // }
         let rf_config = Config {
             oui: 1234,
             device_id: 5678,
             auth_mode: longfi_device::AuthMode::PresharedKey128,
         };
 
+        let radio = RadioType::SX1276;
+
         let mut longfi_radio =
-            unsafe { LongFi::new(&mut BINDINGS.bindings, rf_config, Some(get_preshared_key)).unwrap() };
+            unsafe { LongFi::new(radio, &mut BINDINGS.bindings, rf_config, Some(get_preshared_key)).unwrap() };
 
         longfi_radio.set_buffer(resources.BUFFER);
 
