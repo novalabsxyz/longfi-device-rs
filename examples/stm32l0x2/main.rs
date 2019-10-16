@@ -1,19 +1,20 @@
 #![cfg_attr(not(test), no_std)]
 #![no_main]
-
-mod longfi_bindings;
-
 extern crate nb;
 extern crate panic_halt;
 
-use core::fmt::Write;
-use embedded_hal::digital::v2::OutputPin;
+
+use stm32l0xx_hal as hal;
 use hal::serial::USART1 as DebugUsart;
-use hal::{exti::TriggerEdge, gpio::*, pac, prelude::*, rcc, serial, spi, syscfg};
+use hal::{exti::TriggerEdge, gpio::*, pac, prelude::*, rcc, serial, syscfg};
+
 use longfi_device;
 use longfi_device::LongFi;
 use longfi_device::{ClientEvent, Config, RfEvent};
-use stm32l0xx_hal as hal;
+
+use core::fmt::Write;
+
+use helium_tracker_feather as board;
 
 static mut PRESHARED_KEY: [u8; 16] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
 
@@ -80,37 +81,20 @@ const APP: () = {
             TriggerEdge::Rising,
         );
 
-        let sck = gpiob.pb13;
-        let miso = gpiob.pb14;
-        let mosi = gpiob.pb15;
-        let nss = gpiob.pb12.into_push_pull_output();
-        longfi_bindings::set_spi_nss(nss);
-
-        // Initialise the SPI peripheral.
-        let mut _spi = device
-            .SPI2
-            .spi((sck, miso, mosi), spi::MODE_0, 1_000_000.hz(), &mut rcc);
-
-        let reset = gpiob.pb1.into_push_pull_output();
-        longfi_bindings::set_radio_reset(reset);
-
-        let busy = gpioc.pc2.into_floating_input();
-        longfi_bindings::set_is_busy_pin(busy);
-
-        let ant_en = gpioa.pa15.into_push_pull_output();
-        longfi_bindings::set_ant_en(ant_en);
-
-        static mut BINDINGS: longfi_device::BoardBindings = longfi_device::BoardBindings {
-            reset: Some(longfi_bindings::radio_reset),
-            spi_in_out: Some(longfi_bindings::spi_in_out),
-            spi_nss: Some(longfi_bindings::spi_nss),
-            delay_ms: Some(longfi_bindings::delay_ms),
-            get_random_bits: Some(longfi_bindings::get_random_bits),
-            set_antenna_pins: Some(longfi_bindings::set_antenna_pins),
-            set_board_tcxo: None,
-            busy_pin_status: Some(longfi_bindings::busy_pin_status),
-            reduce_power: None,
-        };
+        static mut BINDINGS: board::LongFiBindings = board::LongFiBindings::new();
+        unsafe {
+            BINDINGS.init(
+                device.SPI2,
+                &mut rcc,
+                gpiob.pb13,
+                gpiob.pb14,
+                gpiob.pb15,
+                gpiob.pb12,
+                gpiob.pb1,
+                gpioa.pa15,
+                gpioc.pc2
+            );
+        }
 
         let rf_config = Config {
             oui: 1234,
@@ -119,7 +103,7 @@ const APP: () = {
         };
 
         let mut longfi_radio =
-            unsafe { LongFi::new(&mut BINDINGS, rf_config, Some(get_preshared_key)).unwrap() };
+            unsafe { LongFi::new(&mut BINDINGS.bindings, rf_config, Some(get_preshared_key)).unwrap() };
 
         longfi_radio.set_buffer(resources.BUFFER);
 
