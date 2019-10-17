@@ -33,8 +33,8 @@ static mut AUTH_CB: Option<AuthCb> = None;
 unsafe impl Send for LongFi {}
 
 pub enum RadioType {
-    SX1276,
-    SX1262,
+    Sx1276,
+    Sx1262
 }
 
 
@@ -50,8 +50,8 @@ impl LongFi {
         unsafe {
             SX12XX = Some(
                 match radio {
-                    SX1262 => SX126xRadioNew(),
-                    SX1276 => SX1276RadioNew(),
+                    RadioType::Sx1262 => SX126xRadioNew(),
+                    RadioType::Sx1276 => SX1276RadioNew(),
                 }
             );
 

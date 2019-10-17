@@ -1,16 +1,17 @@
+// To use example, press any key in serial terminal
+// Packet will send and "Transmit Done!" will print when radio is done sending packet
+
 #![cfg_attr(not(test), no_std)]
 #![no_main]
 
-#[cfg(not(any(feature = "helium_feather", feature = "b_l072z_lrwan1")))]
+#[cfg(not(any(feature = "helium_feather", feature = "b_l072z_lrwan1", feature = "catena_4610")))]
 panic!{"Must do \"--features\" for one of the support boards while building the example"}
 
 extern crate nb;
 extern crate panic_halt;
 
-
 use stm32l0xx_hal as hal;
-use hal::serial::USART1 as DebugUsart;
-use hal::{exti::TriggerEdge, gpio::*, pac, prelude::*, rcc, serial, syscfg};
+use hal::{gpio::*, pac, prelude::*, rcc, serial, syscfg};
 
 use longfi_device;
 use longfi_device::{LongFi, RadioType, ClientEvent, Config, RfEvent};
@@ -21,6 +22,8 @@ use core::fmt::Write;
 use helium_tracker_feather as board;
 #[cfg(feature = "b_l072z_lrwan1")]
 use b_l072z_lrwan1 as board;
+#[cfg(feature = "catena_4610")]
+use catena_4610 as board;
 
 static mut PRESHARED_KEY: [u8; 16] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
 
@@ -30,62 +33,45 @@ pub extern "C" fn get_preshared_key() -> *mut u8 {
 
 #[rtfm::app(device = stm32l0xx_hal::pac)]
 const APP: () = {
-    static mut LED: gpiob::PB5<Output<PushPull>> = ();
     static mut INT: pac::EXTI = ();
-    static mut BUTTON: gpiob::PB2<Input<PullUp>> = ();
-    static mut SX126X_DIO1: gpiob::PB0<Input<Floating>> = ();
-    static mut DEBUG_UART: serial::Tx<DebugUsart> = ();
-    static mut UART_RX: serial::Rx<DebugUsart> = ();
+    static mut RADIO_IRQ: board::RadioIRQ = ();
+    static mut DEBUG_UART: serial::Tx<board::DebugUsart> = ();
+    static mut UART_RX: serial::Rx<board::DebugUsart> = ();
     static mut BUFFER: [u8; 512] = [0; 512];
     static mut COUNT: u8 = 0;
     static mut LONGFI: LongFi = ();
 
     #[init(spawn = [send_ping], resources = [BUFFER])]
     fn init() -> init::LateResources {
-        // Configure the clock.
         let mut rcc = device.RCC.freeze(rcc::Config::hsi16());
         let mut syscfg = syscfg::SYSCFG::new(device.SYSCFG_COMP, &mut rcc);
 
-        // Acquire the GPIOB peripheral. This also enables the clock for GPIOB in
-        // the RCC register.
         let gpioa = device.GPIOA.split(&mut rcc);
         let gpiob = device.GPIOB.split(&mut rcc);
         let gpioc = device.GPIOC.split(&mut rcc);
 
-        let tx_pin = gpioa.pa9;
-        let rx_pin = gpioa.pa10;
+        #[cfg(feature = "b_l072z_lrwan1")]
+        let (tx_pin, rx_pin, serial_peripheral) = (gpioa.pa2, gpioa.pa3, device.USART2);
+        #[cfg(any(feature = "helium_feather", feature = "catena_4610"))]
+        let (tx_pin, rx_pin, serial_peripheral) = (gpioa.pa9, gpioa.pa10, device.USART1);
 
-        // Configure the serial peripheral.
-        let mut serial = device
-            .USART1
+        let mut serial = serial_peripheral
             .usart((tx_pin, rx_pin), serial::Config::default(), &mut rcc)
             .unwrap();
 
+        // listen for incoming bytes which will trigger transmits
         serial.listen(serial::Event::Rxne);
-
         let (mut tx, mut rx) = serial.split();
 
-        write!(tx, "SX1262 test\r\n").unwrap();
+        write!(tx, "LongFi Device Test\r\n").unwrap();
 
-        // Configure PB5 as output.
-        let led = gpiob.pb5.into_push_pull_output();
+        let mut exti = device.EXTI;
+        #[cfg(any(feature = "b_l072z_lrwan1", feature = "catena_4610"))]
+        let radio_irq = gpiob.pb4;
+        #[cfg(feature = "helium_feather")]
+        let radio_irq = gpiob.pb0;
 
-        let exti = device.EXTI;
-
-        // Configure PB2 as input.
-        let button = gpiob.pb2.into_pull_up_input();
-        // Configure the external interrupt on the falling edge for the pin 2.
-        exti.listen(&mut syscfg, button.port, button.i, TriggerEdge::Falling);
-
-        // // Configure PB4 as input.
-        let sx126x_dio1 = gpiob.pb0.into_floating_input();
-        // Configure the external interrupt on the falling edge for the pin 2.
-        exti.listen(
-            &mut syscfg,
-            sx126x_dio1.port,
-            sx126x_dio1.i,
-            TriggerEdge::Rising,
-        );
+        let radio_irq = board::initialize_radio_irq(radio_irq, &mut syscfg, &mut exti);
 
         static mut BINDINGS: board::LongFiBindings = board::LongFiBindings::new();
 
@@ -103,29 +89,40 @@ const APP: () = {
                 gpioc.pc2
             );
         }
+        
+        #[cfg(feature = "b_l072z_lrwan1")]
+        let tcxo_en: Option<board::TcxoEn> = None;
+        #[cfg(feature = "catena_4610")]
+        let tcxo_en: Option<board::TcxoEn> = Some(gpioa.pa8.into_push_pull_output());
 
-        // #[cfg(feature = "b_l072z_lrwan1")]
-        // unsafe {
-        //     BINDINGS.init(
-        //         device.SPI1,
-        //         &mut rcc,
-        //         gpiob.pb3,
-        //         gpioa.pa6,
-        //         gpioa.pa7,
-        //         gpioa.pa15,
-        //         gpioc.pc0,
-        //         gpioa.pa1,
-        //         gpioc.pc2,
-        //         gpioc.pc1
-        //     );
-        // }
+        #[cfg(any(feature = "b_l072z_lrwan1", feature = "catena_4610"))]
+        unsafe {
+            BINDINGS.init(
+                device.SPI1,
+                &mut rcc,
+                gpiob.pb3,
+                gpioa.pa6,
+                gpioa.pa7,
+                gpioa.pa15,
+                gpioc.pc0,
+                gpioa.pa1,
+                gpioc.pc2,
+                gpioc.pc1,
+                tcxo_en
+            );
+        }
+        
         let rf_config = Config {
             oui: 1234,
             device_id: 5678,
             auth_mode: longfi_device::AuthMode::PresharedKey128,
         };
 
-        let radio = RadioType::SX1276;
+        #[cfg(feature = "helium_feather")]
+        let radio = RadioType::Sx1262;
+
+        #[cfg(any(feature = "b_l072z_lrwan1", feature = "catena_4610"))]
+        let radio = RadioType::Sx1276;
 
         let mut longfi_radio =
             unsafe { LongFi::new(radio, &mut BINDINGS.bindings, rf_config, Some(get_preshared_key)).unwrap() };
@@ -136,10 +133,8 @@ const APP: () = {
 
         // Return the initialised resources.
         init::LateResources {
-            LED: led,
             INT: exti,
-            BUTTON: button,
-            SX126X_DIO1: sx126x_dio1,
+            RADIO_IRQ: radio_irq,
             DEBUG_UART: tx,
             UART_RX: rx,
             LONGFI: longfi_radio,
@@ -261,31 +256,33 @@ const APP: () = {
         resources.LONGFI.send(&packet);
     }
 
-    #[interrupt(priority = 1, resources = [LED, INT, BUTTON], spawn = [send_ping])]
-    fn EXTI2_3() {
-        static mut STATE: bool = false;
-        // Clear the interrupt flag.
-        resources.INT.clear_irq(resources.BUTTON.i);
-        if *STATE {
-            resources.LED.set_low().unwrap();
-            *STATE = false;
-        } else {
-            resources.LED.set_high().unwrap();
-            *STATE = true;
-        }
-        spawn.send_ping().unwrap();
-    }
-
-    #[interrupt(priority=1, resources = [UART_RX], spawn = [send_ping])] // = 1, )]
+    #[cfg(any(feature = "helium_feather", feature = "catena_4610"))]
+    #[interrupt(priority=1, resources = [UART_RX], spawn = [send_ping])]
     fn USART1() {
-        let rx = resources.UART_RX;
+        let mut rx = resources.UART_RX;
         rx.read().unwrap();
         spawn.send_ping().unwrap();
     }
 
-    #[interrupt(priority = 1, resources = [SX126X_DIO1, INT], spawn = [radio_event])]
+    #[cfg(feature = "b_l072z_lrwan1")]
+    #[interrupt(priority=1, resources = [UART_RX], spawn = [send_ping])]
+    fn USART2() {
+        let mut rx = resources.UART_RX;
+        rx.read().unwrap();
+        spawn.send_ping().unwrap();
+    }
+
+    #[cfg(feature = "helium_feather")]
+    #[interrupt(priority = 1, resources = [RADIO_IRQ, INT], spawn = [radio_event])]
     fn EXTI0_1() {
-        resources.INT.clear_irq(resources.SX126X_DIO1.i);
+        resources.INT.clear_irq(resources.RADIO_IRQ.i);
+        spawn.radio_event(RfEvent::DIO0).unwrap();
+    }
+
+    #[cfg(any(feature = "helium_feather", feature = "catena_4610"))]
+    #[interrupt(priority = 1, resources = [RADIO_IRQ, INT], spawn = [radio_event])]
+    fn EXTI4_15() {
+        resources.INT.clear_irq(resources.RADIO_IRQ.i);
         spawn.radio_event(RfEvent::DIO0).unwrap();
     }
 
