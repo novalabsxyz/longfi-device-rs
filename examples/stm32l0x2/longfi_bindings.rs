@@ -1,41 +1,38 @@
-use stm32l0xx_hal as hal;
-use hal::prelude::*;
 use hal::device;
+use hal::exti;
 use hal::gpio::*;
+use hal::pac;
+use hal::prelude::*;
 use hal::rcc::Rcc;
 use hal::spi;
-use hal::exti;
-use hal::pac;
 use longfi_device::{AntPinsMode, BoardBindings, Spi};
 use nb::block;
+use stm32l0xx_hal as hal;
 
 #[allow(dead_code)]
 pub struct LongFiBindings {
-    pub bindings: BoardBindings
+    pub bindings: BoardBindings,
 }
 
 type Uninitialized = Input<Floating>;
 
 pub type RadioIRQ = gpiob::PB4<Input<PullUp>>;
 
-pub fn initialize_irq(pin: gpiob::PB4<Uninitialized>, syscfg: &mut hal::syscfg::SYSCFG, exti: &mut pac::EXTI) -> gpiob::PB4<Input<PullUp>> {
+pub fn initialize_irq(
+    pin: gpiob::PB4<Uninitialized>,
+    syscfg: &mut hal::syscfg::SYSCFG,
+    exti: &mut pac::EXTI,
+) -> gpiob::PB4<Input<PullUp>> {
+    let dio0 = pin.into_pull_up_input();
 
-        let dio0 = pin.into_pull_up_input();
+    exti.listen(syscfg, dio0.port, dio0.i, exti::TriggerEdge::Rising);
 
-        exti.listen(
-            syscfg,
-            dio0.port,
-            dio0.i,
-            exti::TriggerEdge::Rising,
-        );
-
-        dio0
+    dio0
 }
 
 pub type TcxoEn = gpioa::PA8<Output<PushPull>>;
 
 impl LongFiBindings {
-
     pub fn new(
         spi_peripheral: device::SPI1,
         rcc: &mut Rcc,
@@ -47,9 +44,8 @@ impl LongFiBindings {
         rx: gpioa::PA1<Uninitialized>,
         tx_rfo: gpioc::PC2<Uninitialized>,
         tx_boost: gpioc::PC1<Uninitialized>,
-        tcxo_en: Option<TcxoEn>
+        tcxo_en: Option<TcxoEn>,
     ) -> LongFiBindings {
-
         // store all of the necessary pins and peripherals into statics
         // this is necessary as the extern C functions need access
         // this is safe, thanks to ownership and because these statics are private
@@ -66,7 +62,7 @@ impl LongFiBindings {
                 rx.into_push_pull_output(),
                 tx_rfo.into_push_pull_output(),
                 tx_boost.into_push_pull_output(),
-                ));
+            ));
         };
 
         LongFiBindings {
@@ -80,13 +76,12 @@ impl LongFiBindings {
                 set_board_tcxo: None,
                 busy_pin_status: None,
                 reduce_power: None,
-            }
+            },
         }
     }
 }
 
 static mut EN_TCXO: Option<TcxoEn> = None;
-
 
 #[no_mangle]
 pub extern "C" fn set_tcxo(value: bool) -> u8 {
@@ -101,7 +96,6 @@ pub extern "C" fn set_tcxo(value: bool) -> u8 {
     }
     6
 }
-
 
 type SpiPort = hal::spi::Spi<
     hal::pac::SPI1,

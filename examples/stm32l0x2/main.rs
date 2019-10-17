@@ -6,18 +6,18 @@
 extern crate nb;
 extern crate panic_halt;
 
-use stm32l0xx_hal as hal;
-use hal::{gpio::*, pac, prelude::*, rcc, serial, syscfg};
-use hal::serial::USART2 as DebugUsart;
-use longfi_device;
-use longfi_device::{LongFi, RadioType, ClientEvent, Config, RfEvent};
 use core::fmt::Write;
+use hal::serial::USART2 as DebugUsart;
+use hal::{gpio::*, pac, prelude::*, rcc, serial, syscfg};
+use longfi_device;
+use longfi_device::{ClientEvent, Config, LongFi, RadioType, RfEvent};
+use stm32l0xx_hal as hal;
 
 mod longfi_bindings;
-pub use longfi_bindings::LongFiBindings as LongFiBindings;
-pub use longfi_bindings::RadioIRQ as RadioIRQ;
 pub use longfi_bindings::initialize_irq as initialize_radio_irq;
-pub use longfi_bindings::TcxoEn as TcxoEn;
+pub use longfi_bindings::LongFiBindings;
+pub use longfi_bindings::RadioIRQ;
+pub use longfi_bindings::TcxoEn;
 
 static mut PRESHARED_KEY: [u8; 16] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
 
@@ -61,7 +61,6 @@ const APP: () = {
         let mut exti = device.EXTI;
         let radio_irq = initialize_radio_irq(gpiob.pb4, &mut syscfg, &mut exti);
 
-
         *BINDINGS = Some(LongFiBindings::new(
             device.SPI1,
             &mut rcc,
@@ -73,7 +72,7 @@ const APP: () = {
             gpioa.pa1,
             gpioc.pc2,
             gpioc.pc1,
-            None
+            None,
         ));
 
         let rf_config = Config {
@@ -83,14 +82,19 @@ const APP: () = {
         };
 
         let mut longfi_radio;
-
         if let Some(bindings) = BINDINGS {
-            longfi_radio =
-                unsafe { LongFi::new(RadioType::Sx1276, &mut bindings.bindings, rf_config, Some(get_preshared_key)).unwrap() };
-        }else {
+            longfi_radio = unsafe {
+                LongFi::new(
+                    RadioType::Sx1276,
+                    &mut bindings.bindings,
+                    rf_config,
+                    Some(get_preshared_key),
+                )
+                .unwrap()
+            };
+        } else {
             panic!("No bindings exist");
         }
-       
 
         longfi_radio.set_buffer(resources.BUFFER);
 
@@ -227,7 +231,6 @@ const APP: () = {
         rx.read().unwrap();
         spawn.send_ping().unwrap();
     }
-
 
     #[interrupt(priority = 1, resources = [RADIO_IRQ, INT], spawn = [radio_event])]
     fn EXTI4_15() {
