@@ -1,6 +1,5 @@
 dist: bionic
 
-
 language: rust
 
 env:
@@ -27,9 +26,6 @@ before_script:
 
 script:
   - cargo build
-  - cargo build --example stm32l0x2 --features helium_feather
-  - cargo build --example stm32l0x2 --features b_l072z_lrwan1
-  - cargo build --example stm32l0x2 --features catena_4610
-  - cargo build --example stm32l0x2 --release --target thumbv6m-none-eabi
+  - cargo build --example stm32l0x2 --release
   - cargo clippy -- -D clippy::all
   - cargo fmt -- --check
