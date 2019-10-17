@@ -6,14 +6,18 @@ pub use longfi_sys::BoardBindings_t as BoardBindings;
 pub use longfi_sys::ClientEvent_t as ClientEvent;
 pub use longfi_sys::LF_Gpio_t as Gpio;
 pub use longfi_sys::LF_Spi_t as Spi;
+pub use longfi_sys::LongFiAuthCallbacks as AuthCb;
+pub use longfi_sys::LongFiAuthMode_t as AuthMode;
+pub use longfi_sys::LongFiConfig_t as Config;
 pub use longfi_sys::LongFi_t;
 use longfi_sys::Radio_t;
-pub use longfi_sys::RfConfig_t as RfConfig;
+pub use longfi_sys::Radio_t as Radio;
 pub use longfi_sys::RfEvent_t as RfEvent;
 pub use longfi_sys::RxPacket_t as RxPacket;
+pub use longfi_sys::SX126xRadioNew;
+pub use longfi_sys::SX1276RadioNew;
 
-// feature sx1276
-static mut SX1276: Option<Radio_t> = None;
+static mut SX12XX: Option<Radio_t> = None;
 
 pub struct LongFi {
     c_handle: LongFi_t,
@@ -24,17 +28,40 @@ pub enum Error {
     NoRadioPointer,
 }
 
+static mut AUTH_CB: Option<AuthCb> = None;
+
 unsafe impl Send for LongFi {}
 
+pub enum RadioType {
+    Sx1276,
+    Sx1262,
+}
+
+type AuthCbFn = unsafe extern "C" fn() -> *mut u8;
+
 impl LongFi {
-    pub fn new(bindings: &mut BoardBindings, config: RfConfig) -> Result<LongFi, Error> {
+    pub fn new(
+        radio: RadioType,
+        bindings: &mut BoardBindings,
+        config: Config,
+        auth_cb_fn: Option<AuthCbFn>,
+    ) -> Result<LongFi, Error> {
         unsafe {
-            SX1276 = Some(longfi_sys::SX1276RadioNew());
-            if let Some(radio) = &mut SX1276 {
+            SX12XX = Some(match radio {
+                RadioType::Sx1262 => SX126xRadioNew(),
+                RadioType::Sx1276 => SX1276RadioNew(),
+            });
+
+            let mut auth_cb = core::mem::zeroed::<AuthCb>();
+            *auth_cb.get_preshared_key.as_mut() = auth_cb_fn;
+
+            AUTH_CB = Some(auth_cb);
+
+            if let (Some(radio), Some(auth_cb)) = (&mut SX12XX, &mut AUTH_CB) {
                 let radio_ptr: *mut Radio_t = radio;
 
                 let mut longfi_radio = LongFi {
-                    c_handle: longfi_sys::longfi_new_handle(bindings, radio_ptr, config),
+                    c_handle: longfi_sys::longfi_new_handle(bindings, radio_ptr, config, auth_cb),
                 };
 
                 longfi_sys::longfi_init(&mut longfi_radio.c_handle);
