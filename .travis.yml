@@ -26,8 +26,10 @@ before_script:
   - rustup component add clippy --toolchain stable-x86_64-unknown-linux-gnu
 
 script:
-  - cargo build --target thumbv6m-none-eabi
-  - cargo build --example stm32l0x2 --target thumbv6m-none-eabi
+  - cargo build
+  - cargo build --example stm32l0x2 --features helium_feather
+  - cargo build --example stm32l0x2 --features b_l072z_lrwan1
+  - cargo build --example stm32l0x2 --features catena_4610
   - cargo build --example stm32l0x2 --release --target thumbv6m-none-eabi
   - cargo clippy -- -D clippy::all
   - cargo fmt -- --check
