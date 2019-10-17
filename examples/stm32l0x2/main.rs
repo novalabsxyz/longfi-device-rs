@@ -9,7 +9,7 @@
     feature = "b_l072z_lrwan1",
     feature = "catena_4610"
 )))]
-compile_error!{"Must do \"--features\" for one of the support boards while building the example"}
+compile_error!("must do \"--features\" for one of the support boards while building the example");
 
 extern crate nb;
 extern crate panic_halt;
