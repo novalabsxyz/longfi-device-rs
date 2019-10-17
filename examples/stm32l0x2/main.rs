@@ -4,26 +4,30 @@
 #![cfg_attr(not(test), no_std)]
 #![no_main]
 
-#[cfg(not(any(feature = "helium_feather", feature = "b_l072z_lrwan1", feature = "catena_4610")))]
-panic!{"Must do \"--features\" for one of the support boards while building the example"}
+#[cfg(not(any(
+    feature = "helium_feather",
+    feature = "b_l072z_lrwan1",
+    feature = "catena_4610"
+)))]
+panic! {"Must do \"--features\" for one of the support boards while building the example"}
 
 extern crate nb;
 extern crate panic_halt;
 
-use stm32l0xx_hal as hal;
 use hal::{gpio::*, pac, prelude::*, rcc, serial, syscfg};
+use stm32l0xx_hal as hal;
 
 use longfi_device;
-use longfi_device::{LongFi, RadioType, ClientEvent, Config, RfEvent};
+use longfi_device::{ClientEvent, Config, LongFi, RadioType, RfEvent};
 
 use core::fmt::Write;
 
-#[cfg(feature = "helium_feather")]
-use helium_tracker_feather as board;
 #[cfg(feature = "b_l072z_lrwan1")]
 use b_l072z_lrwan1 as board;
 #[cfg(feature = "catena_4610")]
 use catena_4610 as board;
+#[cfg(feature = "helium_feather")]
+use helium_tracker_feather as board;
 
 static mut PRESHARED_KEY: [u8; 16] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
 
@@ -86,10 +90,10 @@ const APP: () = {
                 gpiob.pb12,
                 gpiob.pb1,
                 gpioa.pa15,
-                gpioc.pc2
+                gpioc.pc2,
             );
         }
-        
+
         #[cfg(feature = "b_l072z_lrwan1")]
         let tcxo_en: Option<board::TcxoEn> = None;
         #[cfg(feature = "catena_4610")]
@@ -108,10 +112,10 @@ const APP: () = {
                 gpioa.pa1,
                 gpioc.pc2,
                 gpioc.pc1,
-                tcxo_en
+                tcxo_en,
             );
         }
-        
+
         let rf_config = Config {
             oui: 1234,
             device_id: 5678,
@@ -124,8 +128,15 @@ const APP: () = {
         #[cfg(any(feature = "b_l072z_lrwan1", feature = "catena_4610"))]
         let radio = RadioType::Sx1276;
 
-        let mut longfi_radio =
-            unsafe { LongFi::new(radio, &mut BINDINGS.bindings, rf_config, Some(get_preshared_key)).unwrap() };
+        let mut longfi_radio = unsafe {
+            LongFi::new(
+                radio,
+                &mut BINDINGS.bindings,
+                rf_config,
+                Some(get_preshared_key),
+            )
+            .unwrap()
+        };
 
         longfi_radio.set_buffer(resources.BUFFER);
 
