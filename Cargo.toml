@@ -33,7 +33,7 @@ catena-4610 = {git = "ssh://git@github.com/lthiery/rust-catena-4610", branch = "
 
 [dev-dependencies.stm32l0xx-hal]
 git                    = "https://github.com/lthiery/stm32l0xx-hal.git"
-features                = ["stm32l0x2","rt"]
+features                = ["stm32l0x2"]
 branch                  = "enable-spi2"
 
 [profile.dev]
