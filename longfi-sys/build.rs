@@ -1,3 +1,5 @@
+use std::fmt;
+
 #[cfg(workaround_build)]
 fn main() {
     use std::env;
@@ -16,17 +18,21 @@ fn main() {
     println!("cargo:rustc-link-search=native={}/lib", dst.display());
     println!("cargo:rustc-link-lib=static=longfi");
     println!("cargo:rustc-link-lib=static=sx12xx");
+    //println!("{}/include/lfc/lfc.h",dst.display());
+
 
    // make the bindings
    let bindings = bindgen::Builder::default()
        .raw_line("use cty;")
        .use_core()
        .ctypes_prefix("cty")
+       .detect_include_paths(true)
        .header("longfi-device/board.h")
        .header("longfi-device/longfi.h")
        .header("longfi-device/radio/radio.h")
        .header("longfi-device/radio/sx1276/sx1276.h")
        .header("longfi-device/radio/sx126x/sx126x.h")
+       .clang_arg(format!("-I{}/include",dst.display()))
        .whitelist_var("XTAL_FREQ")
        .whitelist_var("FREQ_STEP")
        .whitelist_var("RX_BUFFER_SIZE")
