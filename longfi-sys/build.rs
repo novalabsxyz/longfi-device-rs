@@ -10,7 +10,6 @@ fn main() {
                  .define("BUILD_TESTING", "OFF")
                  .define("CMAKE_C_COMPILER_WORKS", "1")
                  .define("CMAKE_CXX_COMPILER_WORKS", "1")
-                 .define("CMAKE_TOOLCHAIN_FILE", "toolchain-gcc-arm-none-eabi.cmake")
                  .pic(false)
                  .build();
 
