@@ -16,10 +16,13 @@ fn main() {
                  .build();
 
     println!("cargo:rustc-link-search=native={}/lib", dst.display());
+    println!("cargo:rustc-link-lib=static=blake2");
+    println!("cargo:rustc-link-lib=static=cursor");
+    println!("cargo:rustc-link-lib=static=cursor_varint");
+    println!("cargo:rustc-link-lib=static=golay");
+    println!("cargo:rustc-link-lib=static=lfc");
     println!("cargo:rustc-link-lib=static=longfi");
     println!("cargo:rustc-link-lib=static=sx12xx");
-    //println!("{}/include/lfc/lfc.h",dst.display());
-
 
    // make the bindings
    let bindings = bindgen::Builder::default()
