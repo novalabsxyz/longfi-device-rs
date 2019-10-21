@@ -19,11 +19,7 @@ pub use longfi_bindings::LongFiBindings;
 pub use longfi_bindings::RadioIRQ;
 pub use longfi_bindings::TcxoEn;
 
-static mut PRESHARED_KEY: [u8; 16] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
-
-pub extern "C" fn get_preshared_key() -> *mut u8 {
-    unsafe { &mut PRESHARED_KEY[0] as *mut u8 }
-}
+const PRESHARED_KEY: [u8; 16] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
 
 #[rtfm::app(device = stm32l0xx_hal::pac)]
 const APP: () = {
@@ -88,7 +84,7 @@ const APP: () = {
                     RadioType::Sx1276,
                     &mut bindings.bindings,
                     rf_config,
-                    Some(get_preshared_key),
+                    &PRESHARED_KEY,
                 )
                 .unwrap()
             };

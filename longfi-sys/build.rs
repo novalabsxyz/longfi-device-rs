@@ -1,5 +1,3 @@
-use std::fmt;
-
 #[cfg(workaround_build)]
 fn main() {
     use std::env;
@@ -61,6 +59,7 @@ fn main() {
        .whitelist_function("longfi_get_random")
        .whitelist_function("longfi_enable_tcxo")
        .whitelist_function("board_set_bindings")
+       .whitelist_function("memcpy1")
        .whitelist_function("SX1276RadioNew")
        .whitelist_function("SX126xRadioNew")
        .whitelist_function("SX126xReadRegister")

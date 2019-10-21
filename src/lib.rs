@@ -37,14 +37,12 @@ pub enum RadioType {
     Sx1262,
 }
 
-type AuthCbFn = unsafe extern "C" fn() -> *mut u8;
-
 impl LongFi {
     pub fn new(
         radio: RadioType,
         bindings: &mut BoardBindings,
         config: Config,
-        auth_cb_fn: Option<AuthCbFn>,
+        auth_cb_set: &[u8; 16],
     ) -> Result<LongFi, Error> {
         unsafe {
             SX12XX = Some(match radio {
@@ -53,11 +51,9 @@ impl LongFi {
             });
 
             let mut auth_cb = core::mem::zeroed::<AuthCb>();
-            *auth_cb.get_preshared_key.as_mut() = auth_cb_fn;
+            *auth_cb.preshared_key.as_mut() = auth_cb_set.as_ptr();
 
-            AUTH_CB = Some(auth_cb);
-
-            if let (Some(radio), Some(auth_cb)) = (&mut SX12XX, &mut AUTH_CB) {
+            if let Some(radio) = &mut SX12XX {
                 let radio_ptr: *mut Radio_t = radio;
 
                 let mut longfi_radio = LongFi {

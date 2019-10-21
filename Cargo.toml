@@ -22,6 +22,7 @@ panic-semihosting       = "0.5.2"
 panic-halt = "0.2.0"
 embedded-hal = { version = "0.2.3", features = ["unproven"] }
 nb = "0.1.2"
+libc = "0.2.65"
 
 [dev-dependencies.stm32l0xx-hal]
 git                    = "https://github.com/lthiery/stm32l0xx-hal.git"
