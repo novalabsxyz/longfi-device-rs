@@ -28,8 +28,6 @@ pub enum Error {
     NoRadioPointer,
 }
 
-static mut AUTH_CB: Option<AuthCb> = None;
-
 unsafe impl Send for LongFi {}
 
 pub enum RadioType {
