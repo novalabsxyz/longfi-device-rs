@@ -20,7 +20,6 @@ before_script:
   - rustup target add thumbv6m-none-eabi
   - rustup component add rustfmt
   - rustup component add clippy
-  - rustup component add clippy --toolchain stable-x86_64-unknown-linux-gnu
 
 script:
   - cargo build
