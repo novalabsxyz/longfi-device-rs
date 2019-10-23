@@ -7,7 +7,6 @@
 extern crate nb;
 extern crate panic_halt;
 
-<<<<<<< HEAD
 use core::fmt::Write;
 use hal::serial::USART2 as DebugUsart;
 use hal::{gpio::*, pac, prelude::*, rcc, serial, syscfg};
