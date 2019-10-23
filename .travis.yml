@@ -7,12 +7,10 @@ env:
    - RUST_BACKTRACE=1
 
 rust:
-  - stable
+  - nightly
 
 matrix:
   fast_finish: true
-  allow_failures:
-    - rust: nightly
 
 before_script:
   - echo "deb http://cz.archive.ubuntu.com/ubuntu disco main universe" | sudo tee -a /etc/apt/sources.list

@@ -1,11 +1,13 @@
 #![cfg_attr(not(test), no_std)]
 #![no_main]
+
 // To use example, press any key in serial terminal
 // Packet will send and "Transmit Done!" will print when radio is done sending packet
 
 extern crate nb;
 extern crate panic_halt;
 
+<<<<<<< HEAD
 use core::fmt::Write;
 use hal::serial::USART2 as DebugUsart;
 use hal::{gpio::*, pac, prelude::*, rcc, serial, syscfg};
@@ -21,9 +23,11 @@ pub use longfi_bindings::TcxoEn;
 
 const PRESHARED_KEY: [u8; 16] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
 
+
 #[rtfm::app(device = stm32l0xx_hal::pac)]
 const APP: () = {
     static mut INT: pac::EXTI = ();
+
     static mut RADIO_IRQ: RadioIRQ = ();
     static mut DEBUG_UART: serial::Tx<DebugUsart> = ();
     static mut UART_RX: serial::Rx<DebugUsart> = ();
@@ -42,6 +46,7 @@ const APP: () = {
         let gpiob = device.GPIOB.split(&mut rcc);
         let gpioc = device.GPIOC.split(&mut rcc);
 
+
         let (tx_pin, rx_pin, serial_peripheral) = (gpioa.pa2, gpioa.pa3, device.USART2);
 
         let mut serial = serial_peripheral
@@ -55,6 +60,7 @@ const APP: () = {
         write!(tx, "LongFi Device Test\r\n").unwrap();
 
         let mut exti = device.EXTI;
+
         let radio_irq = initialize_radio_irq(gpiob.pb4, &mut syscfg, &mut exti);
 
         *BINDINGS = Some(LongFiBindings::new(
@@ -220,6 +226,7 @@ const APP: () = {
         *resources.COUNT += 1;
         resources.LONGFI.send(&packet);
     }
+
 
     #[interrupt(priority=1, resources = [UART_RX], spawn = [send_ping])]
     fn USART2() {

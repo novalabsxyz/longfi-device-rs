@@ -28,12 +28,15 @@ pub enum Error {
     NoRadioPointer,
 }
 
+static mut AUTH_CB: Option<AuthCb> = None;
+
 unsafe impl Send for LongFi {}
 
 pub enum RadioType {
     Sx1276,
     Sx1262,
 }
+
 
 impl LongFi {
     pub fn new(
@@ -52,6 +55,7 @@ impl LongFi {
             *auth_cb.preshared_key.as_mut() = auth_cb_set.as_ptr();
 
             if let Some(radio) = &mut SX12XX {
+
                 let radio_ptr: *mut Radio_t = radio;
 
                 let mut longfi_radio = LongFi {
