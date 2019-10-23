@@ -1,52 +1,42 @@
-// To use example, press any key in serial terminal
-// Packet will send and "Transmit Done!" will print when radio is done sending packet
-
 #![cfg_attr(not(test), no_std)]
 #![no_main]
 
-#[cfg(not(any(
-    feature = "helium_feather",
-    feature = "b_l072z_lrwan1",
-    feature = "catena_4610"
-)))]
-compile_error!("must do \"--features\" for one of the support boards while building the example");
+// To use example, press any key in serial terminal
+// Packet will send and "Transmit Done!" will print when radio is done sending packet
 
 extern crate nb;
 extern crate panic_halt;
 
+use core::fmt::Write;
+use hal::serial::USART2 as DebugUsart;
 use hal::{gpio::*, pac, prelude::*, rcc, serial, syscfg};
-use stm32l0xx_hal as hal;
-
 use longfi_device;
 use longfi_device::{ClientEvent, Config, LongFi, RadioType, RfEvent};
+use stm32l0xx_hal as hal;
 
-use core::fmt::Write;
+mod longfi_bindings;
+pub use longfi_bindings::initialize_irq as initialize_radio_irq;
+pub use longfi_bindings::LongFiBindings;
+pub use longfi_bindings::RadioIRQ;
+pub use longfi_bindings::TcxoEn;
 
-#[cfg(feature = "b_l072z_lrwan1")]
-use b_l072z_lrwan1 as board;
-#[cfg(feature = "catena_4610")]
-use catena_4610 as board;
-#[cfg(feature = "helium_feather")]
-use helium_tracker_feather as board;
-
-static mut PRESHARED_KEY: [u8; 16] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
-
-pub extern "C" fn get_preshared_key() -> *mut u8 {
-    unsafe { &mut PRESHARED_KEY[0] as *mut u8 }
-}
+const PRESHARED_KEY: [u8; 16] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
 
 #[rtfm::app(device = stm32l0xx_hal::pac)]
 const APP: () = {
     static mut INT: pac::EXTI = ();
-    static mut RADIO_IRQ: board::RadioIRQ = ();
-    static mut DEBUG_UART: serial::Tx<board::DebugUsart> = ();
-    static mut UART_RX: serial::Rx<board::DebugUsart> = ();
+
+    static mut RADIO_IRQ: RadioIRQ = ();
+    static mut DEBUG_UART: serial::Tx<DebugUsart> = ();
+    static mut UART_RX: serial::Rx<DebugUsart> = ();
     static mut BUFFER: [u8; 512] = [0; 512];
     static mut COUNT: u8 = 0;
     static mut LONGFI: LongFi = ();
 
     #[init(spawn = [send_ping], resources = [BUFFER])]
     fn init() -> init::LateResources {
+        static mut BINDINGS: Option<LongFiBindings> = None;
+
         let mut rcc = device.RCC.freeze(rcc::Config::hsi16());
         let mut syscfg = syscfg::SYSCFG::new(device.SYSCFG_COMP, &mut rcc);
 
@@ -54,10 +44,7 @@ const APP: () = {
         let gpiob = device.GPIOB.split(&mut rcc);
         let gpioc = device.GPIOC.split(&mut rcc);
 
-        #[cfg(feature = "b_l072z_lrwan1")]
         let (tx_pin, rx_pin, serial_peripheral) = (gpioa.pa2, gpioa.pa3, device.USART2);
-        #[cfg(any(feature = "helium_feather", feature = "catena_4610"))]
-        let (tx_pin, rx_pin, serial_peripheral) = (gpioa.pa9, gpioa.pa10, device.USART1);
 
         let mut serial = serial_peripheral
             .usart((tx_pin, rx_pin), serial::Config::default(), &mut rcc)
@@ -70,51 +57,22 @@ const APP: () = {
         write!(tx, "LongFi Device Test\r\n").unwrap();
 
         let mut exti = device.EXTI;
-        #[cfg(any(feature = "b_l072z_lrwan1", feature = "catena_4610"))]
-        let radio_irq = gpiob.pb4;
-        #[cfg(feature = "helium_feather")]
-        let radio_irq = gpiob.pb0;
 
-        let radio_irq = board::initialize_radio_irq(radio_irq, &mut syscfg, &mut exti);
+        let radio_irq = initialize_radio_irq(gpiob.pb4, &mut syscfg, &mut exti);
 
-        static mut BINDINGS: board::LongFiBindings = board::LongFiBindings::new();
-
-        #[cfg(feature = "helium_feather")]
-        unsafe {
-            BINDINGS.init(
-                device.SPI2,
-                &mut rcc,
-                gpiob.pb13,
-                gpiob.pb14,
-                gpiob.pb15,
-                gpiob.pb12,
-                gpiob.pb1,
-                gpioa.pa15,
-                gpioc.pc2,
-            );
-        }
-
-        #[cfg(feature = "b_l072z_lrwan1")]
-        let tcxo_en: Option<board::TcxoEn> = None;
-        #[cfg(feature = "catena_4610")]
-        let tcxo_en: Option<board::TcxoEn> = Some(gpioa.pa8.into_push_pull_output());
-
-        #[cfg(any(feature = "b_l072z_lrwan1", feature = "catena_4610"))]
-        unsafe {
-            BINDINGS.init(
-                device.SPI1,
-                &mut rcc,
-                gpiob.pb3,
-                gpioa.pa6,
-                gpioa.pa7,
-                gpioa.pa15,
-                gpioc.pc0,
-                gpioa.pa1,
-                gpioc.pc2,
-                gpioc.pc1,
-                tcxo_en,
-            );
-        }
+        *BINDINGS = Some(LongFiBindings::new(
+            device.SPI1,
+            &mut rcc,
+            gpiob.pb3,
+            gpioa.pa6,
+            gpioa.pa7,
+            gpioa.pa15,
+            gpioc.pc0,
+            gpioa.pa1,
+            gpioc.pc2,
+            gpioc.pc1,
+            None,
+        ));
 
         let rf_config = Config {
             oui: 1234,
@@ -122,21 +80,20 @@ const APP: () = {
             auth_mode: longfi_device::AuthMode::PresharedKey128,
         };
 
-        #[cfg(feature = "helium_feather")]
-        let radio = RadioType::Sx1262;
-
-        #[cfg(any(feature = "b_l072z_lrwan1", feature = "catena_4610"))]
-        let radio = RadioType::Sx1276;
-
-        let mut longfi_radio = unsafe {
-            LongFi::new(
-                radio,
-                &mut BINDINGS.bindings,
-                rf_config,
-                Some(get_preshared_key),
-            )
-            .unwrap()
-        };
+        let mut longfi_radio;
+        if let Some(bindings) = BINDINGS {
+            longfi_radio = unsafe {
+                LongFi::new(
+                    RadioType::Sx1276,
+                    &mut bindings.bindings,
+                    rf_config,
+                    &PRESHARED_KEY,
+                )
+                .unwrap()
+            };
+        } else {
+            panic!("No bindings exist");
+        }
 
         longfi_radio.set_buffer(resources.BUFFER);
 
@@ -267,15 +224,6 @@ const APP: () = {
         resources.LONGFI.send(&packet);
     }
 
-    #[cfg(any(feature = "helium_feather", feature = "catena_4610"))]
-    #[interrupt(priority=1, resources = [UART_RX], spawn = [send_ping])]
-    fn USART1() {
-        let mut rx = resources.UART_RX;
-        rx.read().unwrap();
-        spawn.send_ping().unwrap();
-    }
-
-    #[cfg(feature = "b_l072z_lrwan1")]
     #[interrupt(priority=1, resources = [UART_RX], spawn = [send_ping])]
     fn USART2() {
         let mut rx = resources.UART_RX;
@@ -283,14 +231,6 @@ const APP: () = {
         spawn.send_ping().unwrap();
     }
 
-    #[cfg(feature = "helium_feather")]
-    #[interrupt(priority = 1, resources = [RADIO_IRQ, INT], spawn = [radio_event])]
-    fn EXTI0_1() {
-        resources.INT.clear_irq(resources.RADIO_IRQ.i);
-        spawn.radio_event(RfEvent::DIO0).unwrap();
-    }
-
-    #[cfg(any(feature = "helium_feather", feature = "catena_4610"))]
     #[interrupt(priority = 1, resources = [RADIO_IRQ, INT], spawn = [radio_event])]
     fn EXTI4_15() {
         resources.INT.clear_irq(resources.RADIO_IRQ.i);

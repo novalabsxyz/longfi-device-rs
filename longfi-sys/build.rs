@@ -10,11 +10,15 @@ fn main() {
                  .define("BUILD_TESTING", "OFF")
                  .define("CMAKE_C_COMPILER_WORKS", "1")
                  .define("CMAKE_CXX_COMPILER_WORKS", "1")
-                 .define("CMAKE_TOOLCHAIN_FILE", "toolchain-gcc-arm-none-eabi.cmake")
                  .pic(false)
                  .build();
 
     println!("cargo:rustc-link-search=native={}/lib", dst.display());
+    println!("cargo:rustc-link-lib=static=blake2");
+    println!("cargo:rustc-link-lib=static=cursor");
+    println!("cargo:rustc-link-lib=static=cursor_varint");
+    println!("cargo:rustc-link-lib=static=golay");
+    println!("cargo:rustc-link-lib=static=lfc");
     println!("cargo:rustc-link-lib=static=longfi");
     println!("cargo:rustc-link-lib=static=sx12xx");
 
@@ -23,11 +27,13 @@ fn main() {
        .raw_line("use cty;")
        .use_core()
        .ctypes_prefix("cty")
+       .detect_include_paths(true)
        .header("longfi-device/board.h")
        .header("longfi-device/longfi.h")
        .header("longfi-device/radio/radio.h")
        .header("longfi-device/radio/sx1276/sx1276.h")
        .header("longfi-device/radio/sx126x/sx126x.h")
+       .clang_arg(format!("-I{}/include",dst.display()))
        .whitelist_var("XTAL_FREQ")
        .whitelist_var("FREQ_STEP")
        .whitelist_var("RX_BUFFER_SIZE")
@@ -53,6 +59,7 @@ fn main() {
        .whitelist_function("longfi_get_random")
        .whitelist_function("longfi_enable_tcxo")
        .whitelist_function("board_set_bindings")
+       .whitelist_function("memcpy1")
        .whitelist_function("SX1276RadioNew")
        .whitelist_function("SX126xRadioNew")
        .whitelist_function("SX126xReadRegister")

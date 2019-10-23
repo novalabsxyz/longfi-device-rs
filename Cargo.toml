@@ -4,11 +4,6 @@ version = "0.1.0"
 authors = ["Louis Thiery <louis@helium.com>"]
 edition = "2018"
 
-[features]
-helium_feather = []
-b_l072z_lrwan1 = []
-catena_4610 = []
-
 [dependencies]
 longfi-sys = {path = "./longfi-sys"}
 libm = "0.1.4"
@@ -27,9 +22,6 @@ panic-semihosting       = "0.5.2"
 panic-halt = "0.2.0"
 embedded-hal = { version = "0.2.3", features = ["unproven"] }
 nb = "0.1.2"
-helium-tracker-feather = {git = "ssh://git@github.com/helium/tracker-feather", branch = "master"}
-b-l072z-lrwan1 = {git = "ssh://git@github.com/lthiery/b-l072z-lrwan1-rs", branch = "master"}
-catena-4610 = {git = "ssh://git@github.com/lthiery/rust-catena-4610", branch = "master"}
 
 [dev-dependencies.stm32l0xx-hal]
 git                    = "https://github.com/lthiery/stm32l0xx-hal.git"
@@ -40,4 +32,7 @@ branch                  = "enable-spi2"
 opt-level = "s"
 
 [profile.release]
-opt-level = "z"
+incremental   = false
+codegen-units = 1
+lto           = true
+opt-level     = "s"
