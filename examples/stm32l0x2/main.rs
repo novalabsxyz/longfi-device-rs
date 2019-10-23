@@ -22,7 +22,6 @@ pub use longfi_bindings::TcxoEn;
 
 const PRESHARED_KEY: [u8; 16] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
 
-
 #[rtfm::app(device = stm32l0xx_hal::pac)]
 const APP: () = {
     static mut INT: pac::EXTI = ();
@@ -44,7 +43,6 @@ const APP: () = {
         let gpioa = device.GPIOA.split(&mut rcc);
         let gpiob = device.GPIOB.split(&mut rcc);
         let gpioc = device.GPIOC.split(&mut rcc);
-
 
         let (tx_pin, rx_pin, serial_peripheral) = (gpioa.pa2, gpioa.pa3, device.USART2);
 
@@ -225,7 +223,6 @@ const APP: () = {
         *resources.COUNT += 1;
         resources.LONGFI.send(&packet);
     }
-
 
     #[interrupt(priority=1, resources = [UART_RX], spawn = [send_ping])]
     fn USART2() {

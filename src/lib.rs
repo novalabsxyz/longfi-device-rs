@@ -37,7 +37,6 @@ pub enum RadioType {
     Sx1262,
 }
 
-
 impl LongFi {
     pub fn new(
         radio: RadioType,
@@ -55,7 +54,6 @@ impl LongFi {
             *auth_cb.preshared_key.as_mut() = auth_cb_set.as_ptr();
 
             if let Some(radio) = &mut SX12XX {
-
                 let radio_ptr: *mut Radio_t = radio;
 
                 let mut longfi_radio = LongFi {
