@@ -7,7 +7,7 @@ env:
    - RUST_BACKTRACE=1
 
 rust:
-  - nightly
+  - stable
 
 matrix:
   fast_finish: true
