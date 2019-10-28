@@ -5,7 +5,7 @@ use hal::pac;
 use hal::prelude::*;
 use hal::rcc::Rcc;
 use hal::spi;
-use longfi_device::{AntPinsMode, BoardBindings, Spi};
+use longfi_device::{AntPinsMode, BoardBindings};
 use nb::block;
 use stm32l0xx_hal as hal;
 
@@ -107,7 +107,7 @@ type SpiPort = hal::spi::Spi<
 >;
 static mut SPI: Option<SpiPort> = None;
 #[no_mangle]
-extern "C" fn spi_in_out(_s: *mut Spi, out_data: u8) -> u8 {
+extern "C" fn spi_in_out(out_data: u8) -> u8 {
     unsafe {
         if let Some(spi) = &mut SPI {
             spi.send(out_data).unwrap();
@@ -154,7 +154,11 @@ extern "C" fn delay_ms(ms: u32) {
 
 #[no_mangle]
 extern "C" fn get_random_bits(_bits: u8) -> u32 {
-    0x1
+    static mut count: u32 = 0;
+    unsafe {
+        count+=1;
+        count
+    }
 }
 
 pub struct AntennaSwitches<Rx, TxRfo, TxBoost> {
