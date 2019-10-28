@@ -156,7 +156,7 @@ extern "C" fn delay_ms(ms: u32) {
 extern "C" fn get_random_bits(_bits: u8) -> u32 {
     static mut count: u32 = 0;
     unsafe {
-        count+=1;
+        count += 1;
         count
     }
 }
