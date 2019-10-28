@@ -5,6 +5,7 @@ use hal::pac;
 use hal::prelude::*;
 use hal::rcc::Rcc;
 use hal::spi;
+use hal::rng;
 use longfi_device::{AntPinsMode, BoardBindings};
 use nb::block;
 use stm32l0xx_hal as hal;
@@ -36,6 +37,7 @@ impl LongFiBindings {
     pub fn new(
         spi_peripheral: device::SPI1,
         rcc: &mut Rcc,
+        rng: rng::Rng,
         spi_sck: gpiob::PB3<Uninitialized>,
         spi_miso: gpioa::PA6<Uninitialized>,
         spi_mosi: gpioa::PA7<Uninitialized>,
@@ -63,6 +65,7 @@ impl LongFiBindings {
                 tx_rfo.into_push_pull_output(),
                 tx_boost.into_push_pull_output(),
             ));
+            RNG = Some(rng);
         };
 
         LongFiBindings {
@@ -152,12 +155,22 @@ extern "C" fn delay_ms(ms: u32) {
     cortex_m::asm::delay(ms);
 }
 
-#[no_mangle]
+static mut RNG: Option<rng::Rng> = None;
 extern "C" fn get_random_bits(_bits: u8) -> u32 {
-    static mut count: u32 = 0;
     unsafe {
-        count += 1;
-        count
+        if let Some(rng) = &mut RNG {
+            // enable starts the ADC conversions that generate the random number
+            rng.enable();
+            // wait until the flag flips; interrupt driven is possible but no implemented
+            rng.wait();
+            // reading the result clears the ready flag
+            let val = rng.take_result();
+            // can save some power by disabling until next random number needed
+            rng.disable();
+            val
+        } else {
+            panic!("No Rng exists!");
+        }
     }
 }
 

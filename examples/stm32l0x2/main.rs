@@ -9,7 +9,7 @@ extern crate panic_halt;
 
 use core::fmt::Write;
 use hal::serial::USART2 as DebugUsart;
-use hal::{gpio::*, pac, prelude::*, rcc, serial, syscfg};
+use hal::{gpio::*, pac, prelude::*, rcc, serial, syscfg, rng::Rng};
 use longfi_device;
 use longfi_device::{ClientEvent, Config, LongFi, RadioType, RfEvent};
 use stm32l0xx_hal as hal;
@@ -57,12 +57,13 @@ const APP: () = {
         write!(tx, "LongFi Device Test\r\n").unwrap();
 
         let mut exti = device.EXTI;
-
+        let rng = Rng::new(device.RNG, &mut rcc, &mut syscfg, device.CRS);
         let radio_irq = initialize_radio_irq(gpiob.pb4, &mut syscfg, &mut exti);
 
         *BINDINGS = Some(LongFiBindings::new(
             device.SPI1,
             &mut rcc,
+            rng,
             gpiob.pb3,
             gpioa.pa6,
             gpioa.pa7,
