@@ -4,8 +4,6 @@ use longfi_sys;
 pub use longfi_sys::AntPinsMode_t as AntPinsMode;
 pub use longfi_sys::BoardBindings_t as BoardBindings;
 pub use longfi_sys::ClientEvent_t as ClientEvent;
-pub use longfi_sys::LF_Gpio_t as Gpio;
-pub use longfi_sys::LF_Spi_t as Spi;
 pub use longfi_sys::LongFiAuthCallbacks as AuthCb;
 pub use longfi_sys::LongFiAuthMode_t as AuthMode;
 pub use longfi_sys::LongFiConfig_t as Config;
@@ -27,8 +25,6 @@ pub struct LongFi {
 pub enum Error {
     NoRadioPointer,
 }
-
-static mut AUTH_CB: Option<AuthCb> = None;
 
 unsafe impl Send for LongFi {}
 
