@@ -3,9 +3,18 @@ name = "longfi-device"
 version = "0.1.0"
 authors = ["Louis Thiery <louis@helium.com>"]
 edition = "2018"
+categories = [
+    "embedded",
+    "hardware-support",
+    "no-std",
+]
+license = "Apache 2.0"
+readme = "README.md"
+description = "Rust Wrapper for the LongFi Device C Implementation"
+documentation = "https://docs.rs/crate/longfi-device"
 
 [dependencies]
-longfi-sys = {path = "./longfi-sys"}
+longfi-sys = {path = "./longfi-sys", version = "0.1.0"}
 libm = "0.1.4"
 
 [[example]]
@@ -25,8 +34,9 @@ nb = "0.1.2"
 
 [dev-dependencies.stm32l0xx-hal]
 git                    = "https://github.com/lthiery/stm32l0xx-hal.git"
-features                = ["stm32l0x2","rt"]
-branch                  = "lthiery/rng-pr"
+features               = ["stm32l0x2","rt"]
+branch                 = "lthiery/rng-pr"
+version                = "0.4.0"
 
 [profile.dev]
 opt-level = "s"

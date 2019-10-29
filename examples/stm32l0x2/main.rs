@@ -9,7 +9,7 @@ extern crate panic_halt;
 
 use core::fmt::Write;
 use hal::serial::USART2 as DebugUsart;
-use hal::{gpio::*, pac, prelude::*, rcc, serial, syscfg, rng::Rng};
+use hal::{gpio::*, pac, prelude::*, rcc, rng::Rng, serial, syscfg};
 use longfi_device;
 use longfi_device::{ClientEvent, Config, LongFi, RadioType, RfEvent};
 use stm32l0xx_hal as hal;
