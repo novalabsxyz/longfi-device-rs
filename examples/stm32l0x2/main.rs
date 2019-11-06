@@ -56,6 +56,7 @@ const APP: () = {
 
         write!(tx, "LongFi Device Test\r\n").unwrap();
 
+        let mut exti = device.EXTI;
         // constructor initializes 48 MHz clock that RNG requires
         // Initialize 48 MHz clock and RNG
         let hsi48 = rcc.enable_hsi48(&mut syscfg, device.CRS);
