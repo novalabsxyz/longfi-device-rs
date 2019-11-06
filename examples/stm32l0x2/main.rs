@@ -56,8 +56,10 @@ const APP: () = {
 
         write!(tx, "LongFi Device Test\r\n").unwrap();
 
-        let mut exti = device.EXTI;
-        let rng = Rng::new(device.RNG, &mut rcc, &mut syscfg, device.CRS);
+        // constructor initializes 48 MHz clock that RNG requires
+        // Initialize 48 MHz clock and RNG
+        let hsi48 = rcc.enable_hsi48(&mut syscfg, device.CRS);
+        let rng = Rng::new(device.RNG, &mut rcc, hsi48);
         let radio_irq = initialize_radio_irq(gpiob.pb4, &mut syscfg, &mut exti);
 
         *BINDINGS = Some(LongFiBindings::new(
