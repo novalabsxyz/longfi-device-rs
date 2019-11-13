@@ -18,7 +18,9 @@ Bug fixes:
 * [Link to github PR]():
   A bugfix.
 -->
-
+0.1.1 (2019-11-13)
+==================
+Fixed bug where fingerprints failed due to memory misalignment with C bindings
 
 0.1.0 (2019-10-28)
 ==================
