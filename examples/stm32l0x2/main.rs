@@ -21,7 +21,7 @@ pub use longfi_bindings::RadioIRQ;
 pub use longfi_bindings::TcxoEn;
 
 const OUI: u32 = 1;
-const DEVICE_ID: u32 = 5;
+const DEVICE_ID: u16 = 5;
 const PRESHARED_KEY: [u8; 16] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
 
 #[rtfm::app(device = stm32l0xx_hal::pac)]
