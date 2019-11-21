@@ -152,7 +152,7 @@ const APP: () = {
     #[task(capacity = 4, priority = 2, resources = [DEBUG_UART, COUNT, LONGFI])]
     fn send_ping() {
         write!(resources.DEBUG_UART, "Sending Ping\r\n").unwrap();
-        let packet: [u8; 72] = [
+        let packet: [u8; 14] = [
             0xDE,
             0xAD,
             0xBE,
