@@ -9,13 +9,12 @@ pub use longfi_sys::LongFiAuthMode_t as AuthMode;
 pub use longfi_sys::LongFiConfig_t as Config;
 pub use longfi_sys::LongFi_t;
 use longfi_sys::Radio_t;
-pub use longfi_sys::Radio_t as Radio;
 pub use longfi_sys::RfEvent_t as RfEvent;
 pub use longfi_sys::RxPacket_t as RxPacket;
 pub use longfi_sys::SX126xRadioNew;
 pub use longfi_sys::SX1276RadioNew;
 
-static mut SX12XX: Option<Radio_t> = None;
+static mut SX12XX: Option<Radio> = None;
 
 pub struct LongFi {
     c_handle: LongFi_t,
@@ -28,29 +27,40 @@ pub enum Error {
 
 unsafe impl Send for LongFi {}
 
-pub enum RadioType {
-    Sx1276,
-    Sx1262,
+pub struct Radio {
+    c_handle: Radio_t
 }
+
+impl Radio {
+    pub fn new_sx1262() -> Radio {
+        Radio {
+            c_handle: unsafe{ SX126xRadioNew() }
+        }
+    }
+
+    pub fn new_sx1276() -> Radio {
+        Radio {
+            c_handle: unsafe { SX1276RadioNew() }
+        }
+    }
+}
+
 
 impl LongFi {
     pub fn new(
-        radio: RadioType,
+        radio: Radio,
         bindings: &mut BoardBindings,
         config: Config,
         auth_cb_set: &[u8; 16],
     ) -> Result<LongFi, Error> {
         unsafe {
-            SX12XX = Some(match radio {
-                RadioType::Sx1262 => SX126xRadioNew(),
-                RadioType::Sx1276 => SX1276RadioNew(),
-            });
+            SX12XX = Some(radio);
 
             let mut auth_cb = core::mem::zeroed::<AuthCb>();
             *auth_cb.preshared_key.as_mut() = auth_cb_set.as_ptr();
 
             if let Some(radio) = &mut SX12XX {
-                let radio_ptr: *mut Radio_t = radio;
+                let radio_ptr: *mut Radio_t = &mut radio.c_handle;
 
                 let mut longfi_radio = LongFi {
                     c_handle: longfi_sys::longfi_new_handle(bindings, radio_ptr, config, auth_cb),
