@@ -11,7 +11,7 @@ use core::fmt::Write;
 use hal::serial::USART2 as DebugUsart;
 use hal::{pac, prelude::*, rcc, rng::Rng, serial, syscfg};
 use longfi_device;
-use longfi_device::{Radio, ClientEvent, Config, LongFi, RfEvent};
+use longfi_device::{ClientEvent, Config, LongFi, Radio, RfEvent};
 use stm32l0xx_hal as hal;
 
 mod longfi_bindings;

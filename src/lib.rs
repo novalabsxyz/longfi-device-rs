@@ -28,23 +28,22 @@ pub enum Error {
 unsafe impl Send for LongFi {}
 
 pub struct Radio {
-    c_handle: Radio_t
+    c_handle: Radio_t,
 }
 
 impl Radio {
     pub fn sx1262() -> Radio {
         Radio {
-            c_handle: unsafe{ SX126xRadioNew() }
+            c_handle: unsafe { SX126xRadioNew() },
         }
     }
 
     pub fn sx1276() -> Radio {
         Radio {
-            c_handle: unsafe { SX1276RadioNew() }
+            c_handle: unsafe { SX1276RadioNew() },
         }
     }
 }
-
 
 impl LongFi {
     pub fn new(
