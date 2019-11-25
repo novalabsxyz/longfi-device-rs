@@ -26,7 +26,12 @@ pub fn initialize_irq(
 ) -> gpiob::PB4<Input<PullUp>> {
     let dio0 = pin.into_pull_up_input();
 
-    exti.listen(syscfg, dio0.port, dio0.i, exti::TriggerEdge::Rising);
+    exti.listen(
+        syscfg,
+        dio0.port(),
+        dio0.pin_number(),
+        exti::TriggerEdge::Rising,
+    );
 
     dio0
 }
@@ -46,7 +51,6 @@ impl LongFiBindings {
         rx: gpioa::PA1<Uninitialized>,
         tx_rfo: gpioc::PC2<Uninitialized>,
         tx_boost: gpioc::PC1<Uninitialized>,
-        tcxo_en: Option<TcxoEn>,
     ) -> LongFiBindings {
         // store all of the necessary pins and peripherals into statics
         // this is necessary as the extern C functions need access
@@ -179,7 +183,7 @@ pub struct AntennaSwitches<Rx, TxRfo, TxBoost> {
     tx_rfo: TxRfo,
     tx_boost: TxBoost,
 }
-
+#[warn(unused_must_use)]
 impl<Rx, TxRfo, TxBoost> AntennaSwitches<Rx, TxRfo, TxBoost>
 where
     Rx: embedded_hal::digital::v2::OutputPin,
@@ -195,21 +199,21 @@ where
     }
 
     pub fn set_sleep(&mut self) {
-        self.rx.set_low();
-        self.tx_rfo.set_low();
-        self.tx_boost.set_low();
+        self.rx.set_low().unwrap_or(());
+        self.tx_rfo.set_low().unwrap_or(());
+        self.tx_boost.set_low().unwrap_or(());
     }
 
     pub fn set_tx(&mut self) {
-        self.rx.set_low();
-        self.tx_rfo.set_low();
-        self.tx_boost.set_high();
+        self.rx.set_low().unwrap_or(());
+        self.tx_rfo.set_low().unwrap_or(());
+        self.tx_boost.set_high().unwrap_or(());
     }
 
     pub fn set_rx(&mut self) {
-        self.rx.set_high();
-        self.tx_rfo.set_low();
-        self.tx_boost.set_low();
+        self.rx.set_high().unwrap_or(());
+        self.tx_rfo.set_low().unwrap_or(());
+        self.tx_boost.set_low().unwrap_or(());
     }
 }
 
@@ -221,13 +225,7 @@ type AntSw = AntennaSwitches<
 
 static mut ANT_SW: Option<AntSw> = None;
 
-pub fn set_antenna_switch(pin: AntSw) {
-    unsafe {
-        ANT_SW = Some(pin);
-    }
-}
-
-pub extern "C" fn set_antenna_pins(mode: AntPinsMode, power: u8) {
+pub extern "C" fn set_antenna_pins(mode: AntPinsMode, _power: u8) {
     unsafe {
         if let Some(ant_sw) = &mut ANT_SW {
             match mode {

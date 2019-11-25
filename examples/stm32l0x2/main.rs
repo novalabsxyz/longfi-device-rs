@@ -9,7 +9,7 @@ extern crate panic_halt;
 
 use core::fmt::Write;
 use hal::serial::USART2 as DebugUsart;
-use hal::{gpio::*, pac, prelude::*, rcc, rng::Rng, serial, syscfg};
+use hal::{pac, prelude::*, rcc, rng::Rng, serial, syscfg};
 use longfi_device;
 use longfi_device::{ClientEvent, Config, LongFi, RadioType, RfEvent};
 use stm32l0xx_hal as hal;
@@ -40,7 +40,7 @@ const APP: () = {
         static mut BINDINGS: Option<LongFiBindings> = None;
 
         let mut rcc = device.RCC.freeze(rcc::Config::hsi16());
-        let mut syscfg = syscfg::SYSCFG::new(device.SYSCFG_COMP, &mut rcc);
+        let mut syscfg = syscfg::SYSCFG::new(device.SYSCFG, &mut rcc);
 
         let gpioa = device.GPIOA.split(&mut rcc);
         let gpiob = device.GPIOB.split(&mut rcc);
@@ -54,7 +54,7 @@ const APP: () = {
 
         // listen for incoming bytes which will trigger transmits
         serial.listen(serial::Event::Rxne);
-        let (mut tx, mut rx) = serial.split();
+        let (mut tx, rx) = serial.split();
 
         write!(tx, "LongFi Device Test\r\n").unwrap();
 
@@ -77,7 +77,6 @@ const APP: () = {
             gpioa.pa1,
             gpioc.pc2,
             gpioc.pc1,
-            None,
         ));
 
         let rf_config = Config {
@@ -88,15 +87,13 @@ const APP: () = {
 
         let mut longfi_radio;
         if let Some(bindings) = BINDINGS {
-            longfi_radio = unsafe {
-                LongFi::new(
-                    RadioType::Sx1276,
-                    &mut bindings.bindings,
-                    rf_config,
-                    &PRESHARED_KEY,
-                )
-                .unwrap()
-            };
+            longfi_radio = LongFi::new(
+                RadioType::Sx1276,
+                &mut bindings.bindings,
+                rf_config,
+                &PRESHARED_KEY,
+            )
+            .unwrap();
         } else {
             panic!("No bindings exist");
         }
@@ -232,14 +229,14 @@ const APP: () = {
 
     #[interrupt(priority=1, resources = [UART_RX], spawn = [send_ping])]
     fn USART2() {
-        let mut rx = resources.UART_RX;
+        let rx = resources.UART_RX;
         rx.read().unwrap();
         spawn.send_ping().unwrap();
     }
 
     #[interrupt(priority = 1, resources = [RADIO_IRQ, INT], spawn = [radio_event])]
     fn EXTI4_15() {
-        resources.INT.clear_irq(resources.RADIO_IRQ.i);
+        resources.INT.clear_irq(resources.RADIO_IRQ.pin_number());
         spawn.radio_event(RfEvent::DIO0).unwrap();
     }
 
