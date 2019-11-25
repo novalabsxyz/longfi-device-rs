@@ -32,13 +32,13 @@ pub struct Radio {
 }
 
 impl Radio {
-    pub fn new_sx1262() -> Radio {
+    pub fn sx1262() -> Radio {
         Radio {
             c_handle: unsafe{ SX126xRadioNew() }
         }
     }
 
-    pub fn new_sx1276() -> Radio {
+    pub fn sx1276() -> Radio {
         Radio {
             c_handle: unsafe { SX1276RadioNew() }
         }
