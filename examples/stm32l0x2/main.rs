@@ -87,15 +87,13 @@ const APP: () = {
 
         let mut longfi_radio;
         if let Some(bindings) = BINDINGS {
-            longfi_radio = unsafe {
-                LongFi::new(
+            longfi_radio = LongFi::new(
                     Radio::sx1276(),
                     &mut bindings.bindings,
                     rf_config,
                     &PRESHARED_KEY,
                 )
                 .unwrap()
-            };
         } else {
             panic!("No bindings exist");
         }
