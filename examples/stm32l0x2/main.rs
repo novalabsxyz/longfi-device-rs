@@ -11,7 +11,7 @@ use core::fmt::Write;
 use hal::serial::USART2 as DebugUsart;
 use hal::{pac, prelude::*, rcc, rng::Rng, serial, syscfg};
 use longfi_device;
-use longfi_device::{ClientEvent, Config, LongFi, RadioType, RfEvent};
+use longfi_device::{ClientEvent, Config, LongFi, Radio, RfEvent};
 use stm32l0xx_hal as hal;
 
 mod longfi_bindings;
@@ -88,12 +88,12 @@ const APP: () = {
         let mut longfi_radio;
         if let Some(bindings) = BINDINGS {
             longfi_radio = LongFi::new(
-                RadioType::Sx1276,
+                Radio::sx1276(),
                 &mut bindings.bindings,
                 rf_config,
                 &PRESHARED_KEY,
             )
-            .unwrap();
+            .unwrap()
         } else {
             panic!("No bindings exist");
         }
