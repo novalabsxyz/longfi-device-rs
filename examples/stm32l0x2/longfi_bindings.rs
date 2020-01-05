@@ -1,11 +1,14 @@
 use hal::exti;
+use hal::exti::{
+    line::{ExtiLine, GpioLine},
+    TriggerEdge,
+};
 use hal::gpio::*;
 use hal::pac;
 use hal::prelude::*;
 use hal::rcc::Rcc;
 use hal::rng;
 use hal::spi;
-use hal::exti::{TriggerEdge, line::{GpioLine, ExtiLine}};
 
 use longfi_device::{AntPinsMode, BoardBindings};
 use nb::block;
