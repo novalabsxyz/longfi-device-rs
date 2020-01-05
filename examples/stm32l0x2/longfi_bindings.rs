@@ -1,4 +1,3 @@
-use hal::device;
 use hal::exti;
 use hal::gpio::*;
 use hal::pac;
@@ -6,6 +5,8 @@ use hal::prelude::*;
 use hal::rcc::Rcc;
 use hal::rng;
 use hal::spi;
+use hal::exti::{TriggerEdge, line::{GpioLine, ExtiLine}};
+
 use longfi_device::{AntPinsMode, BoardBindings};
 use nb::block;
 use stm32l0xx_hal as hal;
@@ -26,10 +27,10 @@ pub fn initialize_irq(
 ) -> gpiob::PB4<Input<PullUp>> {
     let dio0 = pin.into_pull_up_input();
 
-    exti.listen(
+    exti.listen_gpio(
         syscfg,
         dio0.port(),
-        dio0.pin_number(),
+        GpioLine::from_raw_line(dio0.pin_number()).unwrap(),
         exti::TriggerEdge::Rising,
     );
 
@@ -40,7 +41,7 @@ pub type TcxoEn = gpioa::PA8<Output<PushPull>>;
 
 impl LongFiBindings {
     pub fn new(
-        spi_peripheral: device::SPI1,
+        spi_peripheral: pac::SPI1,
         rcc: &mut Rcc,
         rng: rng::Rng,
         spi_sck: gpiob::PB3<Uninitialized>,
