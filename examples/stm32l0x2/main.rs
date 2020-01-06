@@ -8,8 +8,13 @@ extern crate nb;
 extern crate panic_halt;
 
 use core::fmt::Write;
+use hal::exti::{
+    line::{ExtiLine, GpioLine},
+    TriggerEdge,
+};
+use hal::pac::{self, interrupt, Interrupt, EXTI};
 use hal::serial::USART2 as DebugUsart;
-use hal::{pac, prelude::*, rcc, rng::Rng, serial, syscfg};
+use hal::{prelude::*, rcc, rng::Rng, serial, syscfg};
 use longfi_device;
 use longfi_device::{ClientEvent, Config, LongFi, Radio, RfEvent};
 use stm32l0xx_hal as hal;
@@ -21,8 +26,10 @@ pub use longfi_bindings::RadioIRQ;
 pub use longfi_bindings::TcxoEn;
 
 const OUI: u32 = 1;
-const DEVICE_ID: u16 = 5;
-const PRESHARED_KEY: [u8; 16] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+const DEVICE_ID: u16 = 3;
+const PRESHARED_KEY: [u8; 16] = [
+    0x7B, 0x60, 0xC0, 0xF0, 0x77, 0x51, 0x50, 0xD3, 0x2, 0xCE, 0xAE, 0x50, 0xA0, 0xD2, 0x11, 0xC1,
+];
 
 #[rtfm::app(device = stm32l0xx_hal::pac)]
 const APP: () = {
@@ -149,80 +156,7 @@ const APP: () = {
     #[task(capacity = 4, priority = 2, resources = [DEBUG_UART, COUNT, LONGFI])]
     fn send_ping() {
         write!(resources.DEBUG_UART, "Sending Ping\r\n").unwrap();
-        let packet: [u8; 72] = [
-            0xDE,
-            0xAD,
-            0xBE,
-            0xEF,
-            *resources.COUNT,
-            0xDE,
-            0xAD,
-            0xBE,
-            0xEF,
-            0xDE,
-            0xAD,
-            0xBE,
-            0xEF,
-            0xDE,
-            0xAD,
-            0xBE,
-            0xEF,
-            0xDE,
-            0xAD,
-            0xBE,
-            0xEF,
-            0xa1,
-            0xa2,
-            0xa3,
-            0xa4,
-            0xDE,
-            0xAD,
-            0xBE,
-            0xEF,
-            *resources.COUNT,
-            0xDE,
-            0xAD,
-            0xBE,
-            0xEF,
-            0xDE,
-            0xAD,
-            0xBE,
-            0xEF,
-            0xDE,
-            0xAD,
-            0xBE,
-            0xEF,
-            0xDE,
-            0xAD,
-            0xBE,
-            0xEF,
-            0xa1,
-            0xa2,
-            0xa3,
-            0xa4,
-            0xDE,
-            0xAD,
-            0xBE,
-            0xEF,
-            0xDE,
-            0xAD,
-            0xBE,
-            0xEF,
-            0xDE,
-            0xAD,
-            0xBE,
-            0xEF,
-            0xa1,
-            0xa2,
-            0xa3,
-            0xa4,
-            0xBE,
-            0xEF,
-            0xa1,
-            0xa2,
-            0xa3,
-            0xa4,
-        ];
+        let packet: [u8; 5] = [0xDE, 0xAD, 0xBE, 0xEF, *resources.COUNT];
         *resources.COUNT += 1;
         resources.LONGFI.send(&packet);
     }
@@ -236,7 +170,7 @@ const APP: () = {
 
     #[interrupt(priority = 1, resources = [RADIO_IRQ, INT], spawn = [radio_event])]
     fn EXTI4_15() {
-        resources.INT.clear_irq(resources.RADIO_IRQ.pin_number());
+        EXTI::unpend(GpioLine::from_raw_line(resources.RADIO_IRQ.pin_number()).unwrap());
         spawn.radio_event(RfEvent::DIO0).unwrap();
     }
 
