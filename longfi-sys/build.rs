@@ -2,8 +2,6 @@
 fn main() {
     use std::env;
     use std::path::PathBuf;
-    use std::process::Command;
-    use cmake;
     use cmake::Config;
 
     let dst = Config::new("longfi-device")
