@@ -31,3 +31,11 @@ run the example:
 
 Run tests:
     `cargo test --target x86_64-unknown-linux-gnu --tests`
+
+## Debugging the build
+
+The `.travis.yml` will provide the most up to date hints on how to build this repository. Notably, the following dependencies exist:
+
+`cmake doxygen xdot install g++-multilib libc6-dev-i386 gcc-arm-none-eabi libnewlib-arm-none-eabi`
+
+In addition, be sure to install `clang` as that appears to resolve header issues in some systems.
