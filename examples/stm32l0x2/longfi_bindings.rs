@@ -1,7 +1,5 @@
 use hal::exti;
-use hal::exti::{
-    ExtiLine, GpioLine,
-};
+use hal::exti::{ExtiLine, GpioLine};
 use hal::gpio::*;
 use hal::pac;
 use hal::prelude::*;

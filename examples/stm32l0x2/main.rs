@@ -7,15 +7,13 @@
 extern crate nb;
 extern crate panic_halt;
 
-use rtfm::app;
 use core::fmt::Write;
-use hal::exti::{
-    ExtiLine, GpioLine,
-};
+use hal::exti::{ExtiLine, GpioLine};
 use hal::serial::USART2 as DebugUsart;
-use hal::{prelude::*, rcc, rng::Rng, serial, syscfg, exti::Exti};
+use hal::{exti::Exti, prelude::*, rcc, rng::Rng, serial, syscfg};
 use longfi_device;
 use longfi_device::{ClientEvent, Config, LongFi, Radio, RfEvent};
+use rtfm::app;
 use stm32l0xx_hal as hal;
 
 mod longfi_bindings;
@@ -41,9 +39,8 @@ const APP: () = {
         buffer: [u8; 512],
         #[init(0)]
         count: u8,
-        longfi:LongFi,
+        longfi: LongFi,
     }
-
 
     #[init(spawn = [send_ping], resources = [buffer])]
     fn init(ctx: init::Context) -> init::LateResources {
@@ -140,12 +137,7 @@ const APP: () = {
                 write!(debug, "  Snr    =  {}\r\n", rx_packet.snr).unwrap();
                 unsafe {
                     for i in 0..rx_packet.len {
-                        write!(
-                            debug,
-                            "{:X} ",
-                            *rx_packet.buf.offset(i as isize)
-                        )
-                        .unwrap();
+                        write!(debug, "{:X} ", *rx_packet.buf.offset(i as isize)).unwrap();
                     }
                     write!(debug, "\r\n").unwrap();
                 }
