@@ -9,10 +9,16 @@ pub use longfi_sys::LongFiAuthMode_t as AuthMode;
 pub use longfi_sys::LongFiConfig_t as Config;
 pub use longfi_sys::LongFi_t;
 use longfi_sys::Radio_t;
-pub use longfi_sys::RfEvent_t as RfEvent;
+pub use longfi_sys::RfEvent_t;
 pub use longfi_sys::RxPacket_t as RxPacket;
 pub use longfi_sys::SX126xRadioNew;
 pub use longfi_sys::SX1276RadioNew;
+
+#[derive(Debug)]
+pub enum RfEvent {
+    DIO0,
+    DIO1,
+}
 
 static mut SX12XX: Option<Radio> = None;
 
@@ -81,7 +87,11 @@ impl LongFi {
     }
 
     pub fn handle_event(&mut self, event: RfEvent) -> ClientEvent {
-        unsafe { longfi_sys::longfi_handle_event(&mut self.c_handle, event) }
+        let event_for_c = match event {
+            RfEvent::DIO0 => RfEvent_t::RFE_DIO0, // TxDone or Rx
+            RfEvent::DIO1 => RfEvent_t::RFE_DIO1,
+        };
+        unsafe { longfi_sys::longfi_handle_event(&mut self.c_handle, event_for_c) }
     }
 
     pub fn send(&mut self, buffer: &[u8]) {
