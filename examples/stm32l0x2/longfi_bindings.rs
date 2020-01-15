@@ -1,7 +1,6 @@
 use hal::exti;
 use hal::exti::{
-    line::{ExtiLine, GpioLine},
-    TriggerEdge,
+    ExtiLine, GpioLine,
 };
 use hal::gpio::*;
 use hal::pac;
@@ -26,7 +25,7 @@ pub type RadioIRQ = gpiob::PB4<Input<PullUp>>;
 pub fn initialize_irq(
     pin: gpiob::PB4<Uninitialized>,
     syscfg: &mut hal::syscfg::SYSCFG,
-    exti: &mut pac::EXTI,
+    exti: &mut exti::Exti,
 ) -> gpiob::PB4<Input<PullUp>> {
     let dio0 = pin.into_pull_up_input();
 

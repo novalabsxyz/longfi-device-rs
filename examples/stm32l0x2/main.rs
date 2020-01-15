@@ -7,14 +7,13 @@
 extern crate nb;
 extern crate panic_halt;
 
+use rtfm::app;
 use core::fmt::Write;
 use hal::exti::{
-    line::{ExtiLine, GpioLine},
-    TriggerEdge,
+    ExtiLine, GpioLine,
 };
-use hal::pac::{self, interrupt, Interrupt, EXTI};
 use hal::serial::USART2 as DebugUsart;
-use hal::{prelude::*, rcc, rng::Rng, serial, syscfg};
+use hal::{prelude::*, rcc, rng::Rng, serial, syscfg, exti::Exti};
 use longfi_device;
 use longfi_device::{ClientEvent, Config, LongFi, Radio, RfEvent};
 use stm32l0xx_hal as hal;
@@ -31,21 +30,25 @@ const PRESHARED_KEY: [u8; 16] = [
     0x7B, 0x60, 0xC0, 0xF0, 0x77, 0x51, 0x50, 0xD3, 0x2, 0xCE, 0xAE, 0x50, 0xA0, 0xD2, 0x11, 0xC1,
 ];
 
-#[rtfm::app(device = stm32l0xx_hal::pac)]
+#[app(device = stm32l0xx_hal::pac, peripherals = true)]
 const APP: () = {
-    static mut INT: pac::EXTI = ();
+    struct Resources {
+        int: Exti,
+        radio_irq: RadioIRQ,
+        debug_uart: serial::Tx<DebugUsart>,
+        uart_rx: serial::Rx<DebugUsart>,
+        #[init([0;512])]
+        buffer: [u8; 512],
+        #[init(0)]
+        count: u8,
+        longfi:LongFi,
+    }
 
-    static mut RADIO_IRQ: RadioIRQ = ();
-    static mut DEBUG_UART: serial::Tx<DebugUsart> = ();
-    static mut UART_RX: serial::Rx<DebugUsart> = ();
-    static mut BUFFER: [u8; 512] = [0; 512];
-    static mut COUNT: u8 = 0;
-    static mut LONGFI: LongFi = ();
 
-    #[init(spawn = [send_ping], resources = [BUFFER])]
-    fn init() -> init::LateResources {
+    #[init(spawn = [send_ping], resources = [buffer])]
+    fn init(ctx: init::Context) -> init::LateResources {
         static mut BINDINGS: Option<LongFiBindings> = None;
-
+        let device = ctx.device;
         let mut rcc = device.RCC.freeze(rcc::Config::hsi16());
         let mut syscfg = syscfg::SYSCFG::new(device.SYSCFG, &mut rcc);
 
@@ -65,7 +68,7 @@ const APP: () = {
 
         write!(tx, "LongFi Device Test\r\n").unwrap();
 
-        let mut exti = device.EXTI;
+        let mut exti = Exti::new(device.EXTI);
         // constructor initializes 48 MHz clock that RNG requires
         // Initialize 48 MHz clock and RNG
         let hsi48 = rcc.enable_hsi48(&mut syscfg, device.CRS);
@@ -105,73 +108,73 @@ const APP: () = {
             panic!("No bindings exist");
         }
 
-        longfi_radio.set_buffer(resources.BUFFER);
+        longfi_radio.set_buffer(ctx.resources.buffer);
 
         write!(tx, "Going to main loop\r\n").unwrap();
 
         // Return the initialised resources.
         init::LateResources {
-            INT: exti,
-            RADIO_IRQ: radio_irq,
-            DEBUG_UART: tx,
-            UART_RX: rx,
-            LONGFI: longfi_radio,
+            int: exti,
+            radio_irq: radio_irq,
+            debug_uart: tx,
+            uart_rx: rx,
+            longfi: longfi_radio,
         }
     }
 
-    #[task(capacity = 4, priority = 2, resources = [DEBUG_UART, BUFFER, LONGFI])]
-    fn radio_event(event: RfEvent) {
-        let mut longfi_radio = resources.LONGFI;
+    #[task(capacity = 4, priority = 2, resources = [debug_uart, buffer, longfi])]
+    fn radio_event(ctx: radio_event::Context, event: RfEvent) {
+        let longfi_radio = ctx.resources.longfi;
         let client_event = longfi_radio.handle_event(event);
-
+        let debug = ctx.resources.debug_uart;
         match client_event {
             ClientEvent::ClientEvent_TxDone => {
-                write!(resources.DEBUG_UART, "Transmit Done!\r\n").unwrap();
+                write!(debug, "Transmit Done!\r\n").unwrap();
             }
             ClientEvent::ClientEvent_Rx => {
                 // get receive buffer
                 let rx_packet = longfi_radio.get_rx();
-                write!(resources.DEBUG_UART, "Received packet\r\n").unwrap();
-                write!(resources.DEBUG_UART, "  Length =  {}\r\n", rx_packet.len).unwrap();
-                write!(resources.DEBUG_UART, "  Rssi   = {}\r\n", rx_packet.rssi).unwrap();
-                write!(resources.DEBUG_UART, "  Snr    =  {}\r\n", rx_packet.snr).unwrap();
+                write!(debug, "Received packet\r\n").unwrap();
+                write!(debug, "  Length =  {}\r\n", rx_packet.len).unwrap();
+                write!(debug, "  Rssi   = {}\r\n", rx_packet.rssi).unwrap();
+                write!(debug, "  Snr    =  {}\r\n", rx_packet.snr).unwrap();
                 unsafe {
                     for i in 0..rx_packet.len {
                         write!(
-                            resources.DEBUG_UART,
+                            debug,
                             "{:X} ",
                             *rx_packet.buf.offset(i as isize)
                         )
                         .unwrap();
                     }
-                    write!(resources.DEBUG_UART, "\r\n").unwrap();
+                    write!(debug, "\r\n").unwrap();
                 }
                 // give buffer back to library
-                longfi_radio.set_buffer(resources.BUFFER);
+                longfi_radio.set_buffer(ctx.resources.buffer);
             }
             ClientEvent::ClientEvent_None => {}
         }
     }
 
-    #[task(capacity = 4, priority = 2, resources = [DEBUG_UART, COUNT, LONGFI])]
-    fn send_ping() {
-        write!(resources.DEBUG_UART, "Sending Ping\r\n").unwrap();
-        let packet: [u8; 5] = [0xDE, 0xAD, 0xBE, 0xEF, *resources.COUNT];
-        *resources.COUNT += 1;
-        resources.LONGFI.send(&packet);
+    #[task(capacity = 4, priority = 2, resources = [debug_uart, count, longfi])]
+    fn send_ping(ctx: send_ping::Context) {
+        write!(ctx.resources.debug_uart, "Sending Ping\r\n").unwrap();
+        let packet: [u8; 5] = [0xDE, 0xAD, 0xBE, 0xEF, *ctx.resources.count];
+        *ctx.resources.count += 1;
+        ctx.resources.longfi.send(&packet);
     }
 
-    #[interrupt(priority=1, resources = [UART_RX], spawn = [send_ping])]
-    fn USART2() {
-        let rx = resources.UART_RX;
+    #[task(binds = USART2, priority=1, resources = [uart_rx], spawn = [send_ping])]
+    fn USART2(ctx: USART2::Context) {
+        let rx = ctx.resources.uart_rx;
         rx.read().unwrap();
-        spawn.send_ping().unwrap();
+        ctx.spawn.send_ping().unwrap();
     }
 
-    #[interrupt(priority = 1, resources = [RADIO_IRQ, INT], spawn = [radio_event])]
-    fn EXTI4_15() {
-        EXTI::unpend(GpioLine::from_raw_line(resources.RADIO_IRQ.pin_number()).unwrap());
-        spawn.radio_event(RfEvent::DIO0).unwrap();
+    #[task(binds = EXTI4_15, priority = 1, resources = [radio_irq, int], spawn = [radio_event])]
+    fn EXTI4_15(ctx: EXTI4_15::Context) {
+        Exti::unpend(GpioLine::from_raw_line(ctx.resources.radio_irq.pin_number()).unwrap());
+        ctx.spawn.radio_event(RfEvent::DIO0).unwrap();
     }
 
     // Interrupt handlers used to dispatch software tasks
